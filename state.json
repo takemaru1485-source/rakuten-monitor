@@ -4,6 +4,18 @@
     "ショップコード（例: golf-shop）": {
       "coupon_ids": [],
       "updated_at": "2026-04-24T14:25:02.071792"
+    },
+    "jopro": {
+      "coupon_ids": [],
+      "updated_at": "2026-04-24T20:06:34.587817"
+    },
+    "victoriagolf": {
+      "coupon_ids": [],
+      "updated_at": "2026-04-24T20:06:35.248048"
+    },
+    "alpen": {
+      "coupon_ids": [],
+      "updated_at": "2026-04-24T20:06:35.966432"
     }
   }
 }
