@@ -1,14 +1,18 @@
 {
   "items": [
     {
-      "name": "商品名をここに書く（例: キャロウェイ アイアンセット）",
-      "item_code": "ショップコード:商品コード（例: golf-shop:item-abc123）"
+      "name": "GT2 (010116020150901)",
+      "item_code": "jopro:010116020150901"
+    },
+    {
+      "name": "GT2 (010116020151061)",
+      "item_code": "jopro:010116020151061"
     }
   ],
   "shops": [
     {
-      "name": "ショップ名をここに書く（例: ゴルフショップXXX）",
-      "shop_code": "ショップコード（例: golf-shop）"
+      "name": "jopro",
+      "shop_code": "jopro"
     }
   ]
 }
