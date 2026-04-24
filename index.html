@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f0f1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="カード管理">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <title>カード支出管理</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <header class="header">
+    <h1>💳 カード管理</h1>
+    <button id="settingsBtn" class="icon-btn">⚙️</button>
+  </header>
+
+  <!-- ── Dashboard View ── -->
+  <div id="dashboard" class="view active">
+
+    <div class="card total-card">
+      <div class="card-label">今月の使用額</div>
+      <div class="total-amount" id="totalAmount">¥0</div>
+      <div class="month-label" id="monthLabel"></div>
+    </div>
+
+    <div class="card budget-card" id="budgetCard">
+      <div class="card-label">予算</div>
+      <div class="budget-info">
+        <span id="budgetUsed">¥0</span>
+        <span class="budget-slash">/</span>
+        <span id="budgetLimit">未設定</span>
+      </div>
+      <div class="gauge-container">
+        <div class="gauge-bar">
+          <div class="gauge-fill" id="gaugeFill"></div>
+        </div>
+        <div class="gauge-percent" id="gaugePercent"></div>
+      </div>
+      <div class="budget-message" id="budgetMessage"></div>
+    </div>
+
+    <div class="card bank-card">
+      <div>
+        <div class="card-label">銀行残高</div>
+        <div class="bank-amount" id="bankAmount">未設定</div>
+      </div>
+      <button class="edit-btn" id="editBankBtn">更新</button>
+    </div>
+
+    <div class="card transactions-card">
+      <div class="card-header">
+        <div class="card-label">最近の取引</div>
+        <button class="view-all-btn" id="viewAllBtn">すべて見る</button>
+      </div>
+      <div id="recentTransactions" class="transaction-list">
+        <div class="empty-state">まだ取引がありません</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── History View ── -->
+  <div id="historyView" class="view">
+    <div class="view-header">
+      <button class="back-btn" id="backBtn">← 戻る</button>
+      <h2>すべての取引</h2>
+    </div>
+    <div id="allTransactions" class="transaction-list"></div>
+  </div>
+
+  <!-- ── Settings View ── -->
+  <div id="settingsView" class="view">
+    <div class="view-header">
+      <button class="back-btn" id="settingsBackBtn">← 戻る</button>
+      <h2>設定</h2>
+    </div>
+    <div class="settings-form">
+      <div class="form-group">
+        <label>今月の予算上限</label>
+        <div class="input-with-prefix">
+          <span>¥</span>
+          <input type="number" id="budgetInput" placeholder="例: 50000" inputmode="numeric">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>銀行残高</label>
+        <div class="input-with-prefix">
+          <span>¥</span>
+          <input type="number" id="bankInput" placeholder="例: 200000" inputmode="numeric">
+        </div>
+      </div>
+      <button class="save-btn" id="saveSettingsBtn">保存する</button>
+      <div class="danger-zone">
+        <button class="danger-btn" id="clearDataBtn">今月のデータをリセット</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FAB ── -->
+  <button class="fab" id="fabBtn">+</button>
+
+  <!-- ── Add Transaction Modal ── -->
+  <div id="addModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>取引を追加</h2>
+        <button class="close-btn" id="closeModal">✕</button>
+      </div>
+
+      <div class="camera-section">
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
+        <button class="camera-btn" id="cameraBtn">
+          <span class="camera-icon">📸</span>
+          <span>レシートを撮影して読み取る</span>
+        </button>
+        <div id="previewContainer" class="preview-container" style="display:none">
+          <img id="receiptPreview" class="receipt-preview" alt="receipt">
+          <div id="ocrStatus" class="ocr-status"></div>
+        </div>
+      </div>
+
+      <div class="add-form">
+        <div class="form-group">
+          <label>金額</label>
+          <div class="input-with-prefix">
+            <span>¥</span>
+            <input type="number" id="amountInput" placeholder="0" inputmode="numeric">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>店名・メモ（任意）</label>
+          <input type="text" id="descInput" placeholder="例: コンビニ、スーパーなど">
+        </div>
+        <div class="form-group">
+          <label>カテゴリ</label>
+          <div class="category-grid" id="categoryGrid"></div>
+        </div>
+        <button class="add-btn" id="addTransactionBtn">追加する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Bank Edit Modal ── -->
+  <div id="bankModal" class="modal">
+    <div class="modal-content small">
+      <div class="modal-header">
+        <h2>銀行残高を更新</h2>
+        <button class="close-btn" id="closeBankModal">✕</button>
+      </div>
+      <div class="form-group">
+        <div class="input-with-prefix">
+          <span>¥</span>
+          <input type="number" id="bankModalInput" placeholder="0" inputmode="numeric">
+        </div>
+      </div>
+      <br>
+      <button class="save-btn" id="saveBankBtn">更新する</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
