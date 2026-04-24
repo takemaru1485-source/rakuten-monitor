@@ -7,12 +7,32 @@
     {
       "name": "GT2 (010116020151061)",
       "item_code": "jopro:010116020151061"
+    },
+    {
+      "name": "GT2",
+      "item_code": "victoriagolf:108799698013"
+    },
+    {
+      "name": "G430",
+      "item_code": "alpen:0146619112"
+    },
+    {
+      "name": "G440",
+      "item_code": "jopro:010127070153481"
     }
   ],
   "shops": [
     {
       "name": "jopro",
       "shop_code": "jopro"
+    },
+    {
+      "name": "ビクトリアゴルフ",
+      "shop_code": "victoriagolf"
+    },
+    {
+      "name": "アルペン",
+      "shop_code": "alpen"
     }
   ]
 }
