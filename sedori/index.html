@@ -122,7 +122,8 @@
   .stock-badge.danger { background: rgba(255,59,48,0.15); color: var(--danger); }
 
   .item-info { flex: 1; min-width: 0; }
-  .item-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-name { font-size: 15px; font-weight: 600; line-height: 1.3; word-break: break-all; }
+  .item-subtitle { font-size: 13px; color: var(--primary); font-weight: 600; margin-top: 1px; }
   .item-sub { font-size: 12px; color: var(--gray); margin-top: 2px; }
 
   .item-right { text-align: right; flex-shrink: 0; }
@@ -497,7 +498,11 @@
       <div class="form-section-label">基本情報</div>
       <div class="form-row">
         <label class="form-label">商品名</label>
-        <input type="text" class="form-input" id="f_name" placeholder="例: Nintendo Switch">
+        <input type="text" class="form-input" id="f_name" placeholder="例: オハナマハロ ファブリックミスト">
+      </div>
+      <div class="form-row">
+        <label class="form-label">香り・特徴</label>
+        <input type="text" class="form-input" id="f_subtitle" placeholder="例: ハリーアノヘア / 50ml">
       </div>
       <div class="form-row">
         <label class="form-label">JANコード</label>
@@ -701,6 +706,7 @@ function renderStock() {
         </div>
         <div class="item-info">
           <div class="item-name">${escHtml(item.name)}</div>
+          ${item.subtitle ? `<div class="item-subtitle">🏷 ${escHtml(item.subtitle)}</div>` : ''}
           <div class="site-dots">${siteDots}</div>
         </div>
         <div class="item-right">
@@ -720,6 +726,7 @@ function openAddModal() {
   document.getElementById('modalTitle').textContent = '商品を追加';
   document.getElementById('deleteBtn').style.display = 'none';
   document.getElementById('f_name').value = '';
+  document.getElementById('f_subtitle').value = '';
   document.getElementById('f_jan').value = '';
   document.getElementById('f_stock').value = '1';
   document.getElementById('f_purchase').value = '';
@@ -739,6 +746,7 @@ function openEditModal(id) {
   document.getElementById('modalTitle').textContent = '商品を編集';
   document.getElementById('deleteBtn').style.display = 'block';
   document.getElementById('f_name').value = item.name;
+  document.getElementById('f_subtitle').value = item.subtitle || '';
   document.getElementById('f_jan').value = item.jan || '';
   document.getElementById('f_stock').value = item.stock;
   document.getElementById('f_purchase').value = item.purchasePrice || '';
@@ -801,6 +809,7 @@ function saveItem() {
   const item = {
     id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2),
     name,
+    subtitle: document.getElementById('f_subtitle').value.trim(),
     jan: document.getElementById('f_jan').value.trim(),
     stock: parseInt(document.getElementById('f_stock').value) || 0,
     purchasePrice: parseFloat(document.getElementById('f_purchase').value) || 0,
@@ -874,6 +883,7 @@ function openDetail(id) {
         </div>
         <div class="detail-info">
           <div class="detail-name">${escHtml(item.name)}</div>
+          ${item.subtitle ? `<div style="font-size:14px;color:var(--primary);font-weight:600;margin-top:3px">🏷 ${escHtml(item.subtitle)}</div>` : ''}
           <div class="detail-source">仕入れ先: ${item.purchaseSource || '—'} / 仕入れ値: ¥${(item.purchasePrice||0).toLocaleString()}</div>
           ${item.jan ? `<div class="detail-source">JAN: ${item.jan}</div>` : ''}
           ${item.note ? `<div class="detail-source">備考: ${escHtml(item.note)}</div>` : ''}
