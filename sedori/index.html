@@ -483,7 +483,30 @@ const SITES = [
 ];
 
 function getData() {
-  return JSON.parse(localStorage.getItem('sedori_v3') || '{"items":[],"history":[],"fees":{}}');
+  // v3データがあればそのまま使う
+  const v3 = localStorage.getItem('sedori_v3');
+  if (v3) return JSON.parse(v3);
+
+  // v2データがあれば移行する
+  const v2 = localStorage.getItem('sedori_v2');
+  if (v2) {
+    const old = JSON.parse(v2);
+    old.items = (old.items || []).map(item => ({
+      ...item,
+      name1: item.name1 || '',
+      name2: item.name2 || item.name || '',
+      name3: item.name3 || item.subtitle || '',
+      // 古いサイトデータをフィルタ（3サイトのみ残す）
+      listings: (item.listings || []).filter(l =>
+        ['yahoo_auction','mercari','yahoo_fleamarket'].includes(l.site)
+      ),
+    }));
+    saveData(old);
+    localStorage.removeItem('sedori_v2');
+    return old;
+  }
+
+  return { items: [], history: [], fees: {} };
 }
 function saveData(d) {
   localStorage.setItem('sedori_v3', JSON.stringify(d));
