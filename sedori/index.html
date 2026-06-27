@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="せどり管理">
+<link rel="manifest" href="manifest.json">
+<title>せどり在庫管理</title>
+<style>
+  :root {
+    --bg: #f2f2f7;
+    --card: #ffffff;
+    --primary: #007aff;
+    --danger: #ff3b30;
+    --warning: #ff9500;
+    --success: #34c759;
+    --gray: #8e8e93;
+    --gray2: #c7c7cc;
+    --text: #1c1c1e;
+    --text2: #3c3c43;
+    --border: #e5e5ea;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* Nav Bar */
+  .navbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding-top: var(--safe-top);
+  }
+  .navbar-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 44px; padding: 0 16px;
+  }
+  .navbar-title { font-size: 17px; font-weight: 600; }
+  .nav-btn {
+    background: none; border: none; color: var(--primary);
+    font-size: 17px; padding: 4px 0; cursor: pointer; font-weight: 500;
+  }
+
+  /* Tab Bar */
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    padding-bottom: var(--safe-bottom);
+    display: flex;
+  }
+  .tab-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 8px 0 4px; cursor: pointer; color: var(--gray);
+    font-size: 10px; gap: 3px; background: none; border: none;
+  }
+  .tab-item.active { color: var(--primary); }
+  .tab-icon { font-size: 22px; }
+
+  /* Content */
+  .content {
+    padding-top: calc(44px + var(--safe-top) + 12px);
+    padding-bottom: calc(49px + var(--safe-bottom) + 12px);
+    padding-left: 16px; padding-right: 16px;
+    min-height: 100vh;
+  }
+
+  /* Page */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--card); border-radius: 12px;
+    margin-bottom: 12px; overflow: hidden;
+  }
+  .card-header {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    font-size: 13px; font-weight: 600; color: var(--gray); text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Summary Stats */
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;
+  }
+  .stat-card {
+    background: var(--card); border-radius: 12px; padding: 16px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .stat-label { font-size: 12px; color: var(--gray); font-weight: 500; }
+  .stat-value { font-size: 28px; font-weight: 700; }
+  .stat-card.danger .stat-value { color: var(--danger); }
+  .stat-card.warning .stat-value { color: var(--warning); }
+  .stat-card.success .stat-value { color: var(--success); }
+
+  /* Item List */
+  .item-row {
+    display: flex; align-items: center; padding: 12px 16px;
+    border-bottom: 1px solid var(--border); gap: 12px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .item-row:last-child { border-bottom: none; }
+  .item-row:active { background: var(--bg); }
+
+  .stock-badge {
+    width: 44px; height: 44px; border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex-shrink: 0; font-weight: 700;
+  }
+  .stock-badge .num { font-size: 20px; line-height: 1; }
+  .stock-badge .lbl { font-size: 9px; opacity: 0.75; }
+  .stock-badge.safe { background: rgba(52,199,89,0.15); color: var(--success); }
+  .stock-badge.warn { background: rgba(255,149,0,0.15); color: var(--warning); }
+  .stock-badge.danger { background: rgba(255,59,48,0.15); color: var(--danger); }
+
+  .item-info { flex: 1; min-width: 0; }
+  .item-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-sub { font-size: 12px; color: var(--gray); margin-top: 2px; }
+
+  .item-right { text-align: right; flex-shrink: 0; }
+  .item-profit { font-size: 15px; font-weight: 700; color: var(--success); }
+  .item-profit.loss { color: var(--danger); }
+  .item-sites { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+  .site-dots { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .site-dot {
+    font-size: 10px; padding: 2px 6px; border-radius: 4px;
+    font-weight: 600; white-space: nowrap;
+  }
+  .site-dot.listed { background: rgba(0,122,255,0.12); color: var(--primary); }
+  .site-dot.unlisted { background: var(--bg); color: var(--gray2); }
+
+  /* Alert Banner */
+  .alert-banner {
+    background: rgba(255,59,48,0.1); border: 1px solid rgba(255,59,48,0.3);
+    border-radius: 10px; padding: 10px 14px; margin-bottom: 12px;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+  .alert-banner .alert-icon { font-size: 18px; flex-shrink: 0; }
+  .alert-banner .alert-text { font-size: 13px; color: var(--danger); font-weight: 500; line-height: 1.4; }
+
+  /* Modal Overlay */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: flex-end;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-sheet {
+    background: var(--bg); border-radius: 20px 20px 0 0;
+    width: 100%; max-height: 92vh; overflow-y: auto;
+    padding-bottom: var(--safe-bottom);
+    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+  .modal-overlay.open .modal-sheet { transform: translateY(0); }
+  .modal-handle {
+    width: 36px; height: 4px; background: var(--gray2); border-radius: 2px;
+    margin: 10px auto 6px;
+  }
+  .modal-title {
+    text-align: center; font-size: 17px; font-weight: 600;
+    padding: 4px 16px 12px;
+  }
+
+  /* Form */
+  .form-section { background: var(--card); border-radius: 12px; margin: 0 16px 16px; overflow: hidden; }
+  .form-section-label {
+    padding: 10px 16px 4px; font-size: 12px; font-weight: 600;
+    color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .form-row {
+    display: flex; align-items: center; padding: 11px 16px;
+    border-bottom: 1px solid var(--border); gap: 12px;
+  }
+  .form-row:last-child { border-bottom: none; }
+  .form-label { font-size: 15px; flex-shrink: 0; min-width: 80px; }
+  .form-input {
+    flex: 1; border: none; outline: none; font-size: 15px;
+    text-align: right; color: var(--text); background: transparent;
+    font-family: inherit;
+  }
+  .form-input::placeholder { color: var(--gray2); }
+  select.form-input { -webkit-appearance: none; appearance: none; }
+
+  /* Checkboxes for sites */
+  .site-toggle-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 8px; padding: 12px 16px;
+  }
+  .site-toggle {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg); border-radius: 10px; padding: 10px 12px;
+    cursor: pointer;
+  }
+  .site-toggle input { display: none; }
+  .site-toggle-check {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid var(--gray2); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .site-toggle input:checked ~ .site-toggle-check {
+    background: var(--primary); border-color: var(--primary); color: white;
+  }
+  .site-toggle-check::after { content: '✓'; font-size: 13px; font-weight: 700; opacity: 0; }
+  .site-toggle input:checked ~ .site-toggle-check::after { opacity: 1; }
+  .site-toggle-name { font-size: 13px; font-weight: 500; }
+
+  /* Price input row */
+  .price-row {
+    display: flex; align-items: center; padding: 11px 16px;
+    border-bottom: 1px solid var(--border); gap: 8px;
+  }
+  .price-row:last-child { border-bottom: none; }
+  .price-site-name { font-size: 13px; font-weight: 600; flex: 1; }
+  .price-input-wrap { display: flex; align-items: center; gap: 4px; }
+  .price-input-wrap span { font-size: 13px; color: var(--gray); }
+  .price-input {
+    width: 90px; border: none; outline: none; font-size: 15px;
+    text-align: right; color: var(--text); background: transparent;
+    font-family: inherit;
+  }
+
+  /* Submit Button */
+  .btn-primary {
+    display: block; width: calc(100% - 32px); margin: 0 16px 16px;
+    background: var(--primary); color: white; border: none;
+    border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-danger {
+    display: block; width: calc(100% - 32px); margin: 0 16px 16px;
+    background: rgba(255,59,48,0.1); color: var(--danger); border: none;
+    border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+
+  /* Profit Calculator */
+  .profit-result-card {
+    background: var(--card); border-radius: 12px; margin-bottom: 12px; overflow: hidden;
+  }
+  .profit-result-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 16px; border-bottom: 1px solid var(--border); font-size: 15px;
+  }
+  .profit-result-row:last-child { border-bottom: none; }
+  .profit-result-row.total { font-weight: 700; font-size: 17px; }
+  .profit-result-row.total .amount { color: var(--success); }
+  .profit-result-row.total .amount.loss { color: var(--danger); }
+  .profit-label { color: var(--text2); }
+  .profit-amount { font-weight: 600; }
+  .profit-amount.minus { color: var(--danger); }
+
+  /* Detail Modal */
+  .detail-header {
+    padding: 0 16px 16px; display: flex; gap: 12px; align-items: flex-start;
+  }
+  .detail-stock-badge {
+    width: 56px; height: 56px; border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-weight: 700; flex-shrink: 0;
+  }
+  .detail-stock-badge .num { font-size: 28px; line-height: 1; }
+  .detail-stock-badge .lbl { font-size: 10px; opacity: 0.7; }
+  .detail-info { flex: 1; }
+  .detail-name { font-size: 20px; font-weight: 700; line-height: 1.2; }
+  .detail-source { font-size: 13px; color: var(--gray); margin-top: 4px; }
+
+  .listing-row {
+    display: flex; align-items: center; padding: 11px 16px;
+    border-bottom: 1px solid var(--border); gap: 10px;
+  }
+  .listing-row:last-child { border-bottom: none; }
+  .listing-site { font-size: 14px; font-weight: 600; flex: 1; }
+  .listing-price { font-size: 14px; font-weight: 600; }
+  .listing-profit { font-size: 12px; color: var(--success); }
+  .listing-profit.loss { color: var(--danger); }
+  .listing-status { font-size: 11px; padding: 3px 8px; border-radius: 5px; font-weight: 600; }
+  .listing-status.on { background: rgba(52,199,89,0.15); color: var(--success); }
+  .listing-status.off { background: var(--border); color: var(--gray); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 60px 32px;
+    color: var(--gray);
+  }
+  .empty-icon { font-size: 56px; margin-bottom: 16px; }
+  .empty-title { font-size: 20px; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
+  .empty-desc { font-size: 15px; line-height: 1.5; }
+
+  /* Section separator */
+  .section-title {
+    font-size: 20px; font-weight: 700; padding: 4px 4px 10px; color: var(--text);
+  }
+
+  .badge-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--danger); color: white; border-radius: 10px;
+    font-size: 11px; font-weight: 700; padding: 1px 6px; min-width: 20px;
+    margin-left: 6px;
+  }
+
+  /* Profit page site selector */
+  .segment {
+    display: flex; background: rgba(118,118,128,0.12);
+    border-radius: 9px; padding: 2px; margin-bottom: 12px;
+  }
+  .segment-btn {
+    flex: 1; border: none; background: transparent; padding: 6px 4px;
+    font-size: 13px; font-weight: 500; border-radius: 7px; cursor: pointer;
+    font-family: inherit; color: var(--text2); transition: all 0.2s;
+  }
+  .segment-btn.active {
+    background: white; color: var(--text); font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+
+  /* Toggle switch */
+  .toggle-switch {
+    position: relative; width: 51px; height: 31px; flex-shrink: 0;
+  }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-slider {
+    position: absolute; inset: 0; background: var(--gray2);
+    border-radius: 15px; cursor: pointer; transition: 0.2s;
+  }
+  .toggle-slider::before {
+    content: ''; position: absolute; width: 27px; height: 27px;
+    left: 2px; top: 2px; background: white; border-radius: 50%;
+    transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .toggle-switch input:checked + .toggle-slider { background: var(--success); }
+  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+  /* History */
+  .history-row {
+    display: flex; align-items: center; padding: 11px 16px;
+    border-bottom: 1px solid var(--border); gap: 10px;
+  }
+  .history-row:last-child { border-bottom: none; }
+  .history-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .history-dot.sold { background: var(--success); }
+  .history-dot.buy { background: var(--primary); }
+  .history-name { font-size: 14px; font-weight: 500; flex: 1; }
+  .history-detail { font-size: 12px; color: var(--gray); margin-top: 2px; }
+  .history-amount { font-size: 14px; font-weight: 700; text-align: right; }
+  .history-date { font-size: 11px; color: var(--gray); text-align: right; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+<div class="navbar">
+  <div class="navbar-inner">
+    <div style="width:60px"></div>
+    <div class="navbar-title" id="navTitle">在庫管理</div>
+    <button class="nav-btn" id="navAddBtn" onclick="openAddModal()">＋ 追加</button>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <!-- 在庫ページ -->
+  <div class="page active" id="page-stock">
+    <div class="stats-grid" id="statsGrid"></div>
+    <div id="alertBanners"></div>
+    <div class="section-title">商品一覧</div>
+    <div class="card" id="itemList">
+      <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <div class="empty-title">商品がありません</div>
+        <div class="empty-desc">右上の「＋ 追加」ボタンで<br>商品を登録してください</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 利益計算ページ -->
+  <div class="page" id="page-profit">
+    <div class="section-title">利益シミュレーター</div>
+    <div class="segment" id="profitSiteSegment"></div>
+    <div class="form-section">
+      <div class="form-section-label">仕入れ情報</div>
+      <div class="form-row">
+        <label class="form-label">仕入れ値</label>
+        <span style="color:var(--gray);font-size:13px">¥</span>
+        <input type="number" class="form-input" id="calcPurchase" placeholder="0" oninput="calcProfit()">
+      </div>
+      <div class="form-row">
+        <label class="form-label">仕入れ送料</label>
+        <span style="color:var(--gray);font-size:13px">¥</span>
+        <input type="number" class="form-input" id="calcBuyShipping" placeholder="0" oninput="calcProfit()">
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-label">販売情報</div>
+      <div class="form-row">
+        <label class="form-label">販売価格</label>
+        <span style="color:var(--gray);font-size:13px">¥</span>
+        <input type="number" class="form-input" id="calcSellPrice" placeholder="0" oninput="calcProfit()">
+      </div>
+      <div class="form-row">
+        <label class="form-label">発送送料</label>
+        <span style="color:var(--gray);font-size:13px">¥</span>
+        <input type="number" class="form-input" id="calcShipping" placeholder="0" oninput="calcProfit()">
+      </div>
+    </div>
+    <div class="profit-result-card" id="profitResult" style="display:none">
+      <div class="card-header">計算結果</div>
+    </div>
+  </div>
+
+  <!-- 履歴ページ -->
+  <div class="page" id="page-history">
+    <div class="section-title">売買履歴</div>
+    <div class="card" id="historyList">
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">履歴がありません</div>
+        <div class="empty-desc">商品を売却すると<br>こちらに履歴が記録されます</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設定ページ -->
+  <div class="page" id="page-settings">
+    <div class="section-title">設定</div>
+    <div class="card">
+      <div class="card-header">データ管理</div>
+      <div class="form-row" style="cursor:pointer" onclick="exportData()">
+        <span class="form-label" style="min-width:auto;flex:1">データをエクスポート (JSON)</span>
+        <span style="color:var(--primary)">›</span>
+      </div>
+      <div class="form-row" style="cursor:pointer" onclick="document.getElementById('importFile').click()">
+        <span class="form-label" style="min-width:auto;flex:1">データをインポート</span>
+        <span style="color:var(--primary)">›</span>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <div class="form-row" style="cursor:pointer" onclick="clearAllData()">
+        <span class="form-label" style="min-width:auto;flex:1;color:var(--danger)">全データを削除</span>
+        <span style="color:var(--danger)">›</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">手数料設定 (%)</div>
+      <div id="feeSettings"></div>
+    </div>
+    <div class="card" style="margin-top:0">
+      <div class="card-header">アプリ情報</div>
+      <div class="form-row">
+        <span class="form-label" style="min-width:auto;flex:1">バージョン</span>
+        <span style="color:var(--gray)">1.0.0</span>
+      </div>
+      <div class="form-row">
+        <span class="form-label" style="min-width:auto;flex:1">データ保存</span>
+        <span style="color:var(--gray)">このデバイスのみ</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tab Bar -->
+<div class="tabbar">
+  <button class="tab-item active" id="tab-stock" onclick="switchTab('stock')">
+    <span class="tab-icon">📦</span>在庫
+  </button>
+  <button class="tab-item" id="tab-profit" onclick="switchTab('profit')">
+    <span class="tab-icon">💰</span>利益計算
+  </button>
+  <button class="tab-item" id="tab-history" onclick="switchTab('history')">
+    <span class="tab-icon">📋</span>履歴
+  </button>
+  <button class="tab-item" id="tab-settings" onclick="switchTab('settings')">
+    <span class="tab-icon">⚙️</span>設定
+  </button>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">商品を追加</div>
+
+    <div class="form-section">
+      <div class="form-section-label">基本情報</div>
+      <div class="form-row">
+        <label class="form-label">商品名</label>
+        <input type="text" class="form-input" id="f_name" placeholder="例: Nintendo Switch">
+      </div>
+      <div class="form-row">
+        <label class="form-label">JANコード</label>
+        <input type="text" class="form-input" id="f_jan" placeholder="省略可" inputmode="numeric">
+      </div>
+      <div class="form-row">
+        <label class="form-label">在庫数</label>
+        <input type="number" class="form-input" id="f_stock" placeholder="1" min="0" value="1" inputmode="numeric">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-label">仕入れ情報</div>
+      <div class="form-row">
+        <label class="form-label">仕入れ値</label>
+        <span style="color:var(--gray);font-size:13px">¥</span>
+        <input type="number" class="form-input" id="f_purchase" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="form-row">
+        <label class="form-label">仕入れ送料</label>
+        <span style="color:var(--gray);font-size:13px">¥</span>
+        <input type="number" class="form-input" id="f_buyShipping" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="form-row">
+        <label class="form-label">仕入れ先</label>
+        <select class="form-input" id="f_source">
+          <option value="実店舗">実店舗</option>
+          <option value="Amazonマーケット">Amazon(仕入)</option>
+          <option value="楽天市場">楽天市場</option>
+          <option value="Yahoo!ショッピング">Yahoo!ショッピング</option>
+          <option value="AENA">AENA</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="form-label">発送送料</label>
+        <span style="color:var(--gray);font-size:13px">¥</span>
+        <input type="number" class="form-input" id="f_shipping" placeholder="0" inputmode="numeric">
+      </div>
+      <div class="form-row">
+        <label class="form-label">備考</label>
+        <input type="text" class="form-input" id="f_note" placeholder="省略可">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-label">出品サイト & 販売価格</div>
+      <div id="sitePriceRows"></div>
+    </div>
+
+    <div class="form-section" style="padding: 8px 0;">
+      <div class="form-section-label" style="padding: 10px 16px 8px;">出品中のサイト</div>
+      <div class="site-toggle-grid" id="siteToggles"></div>
+    </div>
+
+    <button class="btn-primary" id="saveBtn" onclick="saveItem()">保存する</button>
+    <button class="btn-danger" id="deleteBtn" onclick="deleteItem()" style="display:none">この商品を削除</button>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<script>
+// ============ DATA ============
+const SITES = [
+  { id: 'amazon', name: 'Amazon', fee: 10 },
+  { id: 'mercari', name: 'メルカリ', fee: 10 },
+  { id: 'yahoo_auction', name: 'ヤフオク', fee: 10 },
+  { id: 'yahoo_fleamarket', name: 'PayPayフリマ', fee: 5 },
+  { id: 'rakuma', name: 'ラクマ', fee: 6 },
+  { id: 'yahoo_shopping', name: 'Yahooショッピング', fee: 3 },
+];
+
+function getData() {
+  return JSON.parse(localStorage.getItem('sedori_v2') || '{"items":[],"history":[],"fees":{}}');
+}
+function saveData(d) {
+  localStorage.setItem('sedori_v2', JSON.stringify(d));
+}
+function getFees() {
+  const d = getData();
+  const fees = {};
+  SITES.forEach(s => { fees[s.id] = d.fees?.[s.id] ?? s.fee; });
+  return fees;
+}
+
+// ============ NAV / TABS ============
+function switchTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  const titles = { stock: '在庫管理', profit: '利益計算', history: '売買履歴', settings: '設定' };
+  document.getElementById('navTitle').textContent = titles[tab];
+  document.getElementById('navAddBtn').style.display = tab === 'stock' ? '' : 'none';
+  if (tab === 'stock') renderStock();
+  if (tab === 'profit') renderProfitPage();
+  if (tab === 'history') renderHistory();
+  if (tab === 'settings') renderSettings();
+}
+
+// ============ STOCK PAGE ============
+function getStockStatus(item) {
+  const listedCount = item.listings.filter(l => l.listed).length;
+  if (item.stock === 0) return 'danger';
+  if (item.stock <= listedCount) return 'warn';
+  return 'safe';
+}
+
+function getBestProfit(item) {
+  const fees = getFees();
+  let best = null;
+  item.listings.forEach(l => {
+    if (!l.price) return;
+    const fee = l.price * (fees[l.site] / 100);
+    const profit = l.price - fee - (item.purchasePrice || 0) - (item.purchaseShipping || 0) - (item.shippingCost || 0);
+    if (best === null || profit > best) best = profit;
+  });
+  return best;
+}
+
+function renderStock() {
+  const d = getData();
+  const items = d.items;
+
+  // Stats
+  const total = items.length;
+  const danger = items.filter(i => getStockStatus(i) === 'danger').length;
+  const warn = items.filter(i => getStockStatus(i) === 'warn').length;
+  const safe = items.filter(i => getStockStatus(i) === 'safe').length;
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card danger"><div class="stat-label">在庫なし</div><div class="stat-value">${danger}</div></div>
+    <div class="stat-card warning"><div class="stat-label">要注意</div><div class="stat-value">${warn}</div></div>
+    <div class="stat-card success"><div class="stat-label">安全</div><div class="stat-value">${safe}</div></div>
+    <div class="stat-card"><div class="stat-label">商品数</div><div class="stat-value" style="color:var(--primary)">${total}</div></div>
+  `;
+
+  // Alerts
+  const alertItems = items.filter(i => getStockStatus(i) !== 'safe');
+  let alertHTML = '';
+  if (alertItems.length > 0) {
+    alertHTML = `<div class="alert-banner"><div class="alert-icon">⚠️</div><div class="alert-text">`;
+    alertItems.forEach(i => {
+      const listedCount = i.listings.filter(l => l.listed).length;
+      const status = getStockStatus(i);
+      if (status === 'danger') {
+        alertHTML += `<b>${i.name}</b>：在庫0・${listedCount}サイトに出品中！取り下げ必須<br>`;
+      } else {
+        alertHTML += `<b>${i.name}</b>：在庫${i.stock}個・${listedCount}サイトに出品中・要注意<br>`;
+      }
+    });
+    alertHTML += `</div></div>`;
+  }
+  document.getElementById('alertBanners').innerHTML = alertHTML;
+
+  // Item list
+  if (items.length === 0) {
+    document.getElementById('itemList').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📦</div>
+        <div class="empty-title">商品がありません</div>
+        <div class="empty-desc">右上の「＋ 追加」ボタンで<br>商品を登録してください</div>
+      </div>`;
+    return;
+  }
+
+  // Sort: danger first, then warn, then safe
+  const sorted = [...items].sort((a, b) => {
+    const order = { danger: 0, warn: 1, safe: 2 };
+    return order[getStockStatus(a)] - order[getStockStatus(b)];
+  });
+
+  let html = '';
+  sorted.forEach(item => {
+    const status = getStockStatus(item);
+    const listedSites = item.listings.filter(l => l.listed);
+    const bestProfit = getBestProfit(item);
+    const profitStr = bestProfit !== null
+      ? (bestProfit >= 0 ? `+¥${bestProfit.toLocaleString()}` : `-¥${Math.abs(bestProfit).toLocaleString()}`)
+      : '—';
+    const profitClass = bestProfit !== null && bestProfit < 0 ? 'loss' : '';
+
+    const siteDots = SITES.map(s => {
+      const l = item.listings.find(x => x.site === s.id);
+      if (!l) return '';
+      return `<span class="site-dot ${l.listed ? 'listed' : 'unlisted'}">${s.name}</span>`;
+    }).join('');
+
+    html += `
+      <div class="item-row" onclick="openDetail('${item.id}')">
+        <div class="stock-badge ${status}">
+          <span class="num">${item.stock}</span>
+          <span class="lbl">個</span>
+        </div>
+        <div class="item-info">
+          <div class="item-name">${escHtml(item.name)}</div>
+          <div class="site-dots">${siteDots}</div>
+        </div>
+        <div class="item-right">
+          <div class="item-profit ${profitClass}">${profitStr}</div>
+          <div class="item-sites">${listedSites.length}サイト出品中</div>
+        </div>
+      </div>`;
+  });
+  document.getElementById('itemList').innerHTML = html;
+}
+
+// ============ ADD/EDIT MODAL ============
+let editingId = null;
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = '商品を追加';
+  document.getElementById('deleteBtn').style.display = 'none';
+  document.getElementById('f_name').value = '';
+  document.getElementById('f_jan').value = '';
+  document.getElementById('f_stock').value = '1';
+  document.getElementById('f_purchase').value = '';
+  document.getElementById('f_buyShipping').value = '';
+  document.getElementById('f_source').value = '実店舗';
+  document.getElementById('f_shipping').value = '';
+  document.getElementById('f_note').value = '';
+  renderSiteToggles(SITES.map(s => ({ site: s.id, listed: false, price: '' })));
+  openModal('addModal');
+}
+
+function openEditModal(id) {
+  const d = getData();
+  const item = d.items.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = '商品を編集';
+  document.getElementById('deleteBtn').style.display = 'block';
+  document.getElementById('f_name').value = item.name;
+  document.getElementById('f_jan').value = item.jan || '';
+  document.getElementById('f_stock').value = item.stock;
+  document.getElementById('f_purchase').value = item.purchasePrice || '';
+  document.getElementById('f_buyShipping').value = item.purchaseShipping || '';
+  document.getElementById('f_source').value = item.purchaseSource || '実店舗';
+  document.getElementById('f_shipping').value = item.shippingCost || '';
+  document.getElementById('f_note').value = item.note || '';
+  // Merge listings
+  const listings = SITES.map(s => {
+    const ex = item.listings.find(l => l.site === s.id);
+    return ex || { site: s.id, listed: false, price: '' };
+  });
+  renderSiteToggles(listings);
+  closeModal('detailModal');
+  openModal('addModal');
+}
+
+function renderSiteToggles(listings) {
+  // Price rows
+  let priceHTML = '';
+  SITES.forEach(s => {
+    const l = listings.find(x => x.site === s.id) || { price: '' };
+    priceHTML += `
+      <div class="price-row">
+        <div class="price-site-name">${s.name}</div>
+        <div class="price-input-wrap">
+          <span>¥</span>
+          <input type="number" class="price-input" id="price_${s.id}"
+            placeholder="販売価格" value="${l.price || ''}" inputmode="numeric">
+        </div>
+      </div>`;
+  });
+  document.getElementById('sitePriceRows').innerHTML = priceHTML;
+
+  // Toggles
+  let toggleHTML = '';
+  SITES.forEach(s => {
+    const l = listings.find(x => x.site === s.id) || { listed: false };
+    toggleHTML += `
+      <label class="site-toggle">
+        <input type="checkbox" id="toggle_${s.id}" ${l.listed ? 'checked' : ''}>
+        <div class="site-toggle-check"></div>
+        <span class="site-toggle-name">${s.name}</span>
+      </label>`;
+  });
+  document.getElementById('siteToggles').innerHTML = toggleHTML;
+}
+
+function saveItem() {
+  const name = document.getElementById('f_name').value.trim();
+  if (!name) { alert('商品名を入力してください'); return; }
+
+  const listings = SITES.map(s => ({
+    site: s.id,
+    listed: document.getElementById('toggle_' + s.id)?.checked || false,
+    price: parseFloat(document.getElementById('price_' + s.id)?.value) || 0,
+  }));
+
+  const d = getData();
+  const item = {
+    id: editingId || Date.now().toString(36) + Math.random().toString(36).slice(2),
+    name,
+    jan: document.getElementById('f_jan').value.trim(),
+    stock: parseInt(document.getElementById('f_stock').value) || 0,
+    purchasePrice: parseFloat(document.getElementById('f_purchase').value) || 0,
+    purchaseShipping: parseFloat(document.getElementById('f_buyShipping').value) || 0,
+    purchaseSource: document.getElementById('f_source').value,
+    shippingCost: parseFloat(document.getElementById('f_shipping').value) || 0,
+    note: document.getElementById('f_note').value.trim(),
+    listings,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (editingId) {
+    const idx = d.items.findIndex(i => i.id === editingId);
+    if (idx >= 0) d.items[idx] = { ...d.items[idx], ...item };
+  } else {
+    item.createdAt = new Date().toISOString();
+    d.items.push(item);
+  }
+  saveData(d);
+  closeModal('addModal');
+  renderStock();
+}
+
+function deleteItem() {
+  if (!editingId) return;
+  if (!confirm('この商品を削除しますか？')) return;
+  const d = getData();
+  d.items = d.items.filter(i => i.id !== editingId);
+  saveData(d);
+  closeModal('addModal');
+  renderStock();
+}
+
+// ============ DETAIL MODAL ============
+function openDetail(id) {
+  const d = getData();
+  const item = d.items.find(i => i.id === id);
+  if (!item) return;
+  const fees = getFees();
+  const status = getStockStatus(item);
+  const listedCount = item.listings.filter(l => l.listed).length;
+
+  let listingsHTML = '';
+  item.listings.forEach(l => {
+    const site = SITES.find(s => s.id === l.site);
+    if (!site) return;
+    const fee = l.price * (fees[l.site] / 100);
+    const profit = l.price - fee - item.purchasePrice - (item.purchaseShipping || 0) - item.shippingCost;
+    const profitStr = l.price ? (profit >= 0 ? `+¥${Math.round(profit).toLocaleString()}` : `-¥${Math.abs(Math.round(profit)).toLocaleString()}`) : '—';
+    listingsHTML += `
+      <div class="listing-row">
+        <div>
+          <div class="listing-site">${site.name}</div>
+          ${l.price ? `<div class="listing-profit ${profit < 0 ? 'loss' : ''}">${profitStr} (手数料${fees[l.site]}%)</div>` : ''}
+        </div>
+        <div style="text-align:right">
+          <div class="listing-price">${l.price ? '¥' + l.price.toLocaleString() : '—'}</div>
+          <div class="listing-status ${l.listed ? 'on' : 'off'}">${l.listed ? '出品中' : '未出品'}</div>
+        </div>
+      </div>`;
+  });
+
+  const costTotal = item.purchasePrice + (item.purchaseShipping || 0);
+
+  document.getElementById('detailContent').innerHTML = `
+    <div style="padding:0 16px 8px">
+      <div class="detail-header">
+        <div class="detail-stock-badge ${status}" style="${status==='safe'?'background:rgba(52,199,89,0.15);color:var(--success)':status==='warn'?'background:rgba(255,149,0,0.15);color:var(--warning)':'background:rgba(255,59,48,0.15);color:var(--danger)'}">
+          <span class="num">${item.stock}</span>
+          <span class="lbl">個</span>
+        </div>
+        <div class="detail-info">
+          <div class="detail-name">${escHtml(item.name)}</div>
+          <div class="detail-source">仕入れ先: ${item.purchaseSource || '—'} / 仕入れ値: ¥${(item.purchasePrice||0).toLocaleString()}</div>
+          ${item.jan ? `<div class="detail-source">JAN: ${item.jan}</div>` : ''}
+          ${item.note ? `<div class="detail-source">備考: ${escHtml(item.note)}</div>` : ''}
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin:0 16px 12px">
+      <div class="card-header">出品状況 (${listedCount}サイト出品中)</div>
+      ${listingsHTML}
+    </div>
+    <div class="card" style="margin:0 16px 12px">
+      <div class="card-header">コスト内訳</div>
+      <div class="profit-result-row"><span class="profit-label">仕入れ値</span><span class="profit-amount">¥${(item.purchasePrice||0).toLocaleString()}</span></div>
+      <div class="profit-result-row"><span class="profit-label">仕入れ送料</span><span class="profit-amount minus">-¥${(item.purchaseShipping||0).toLocaleString()}</span></div>
+      <div class="profit-result-row"><span class="profit-label">発送送料</span><span class="profit-amount minus">-¥${(item.shippingCost||0).toLocaleString()}</span></div>
+    </div>
+    <button class="btn-primary" style="margin-bottom:8px" onclick="openEditModal('${id}')">編集する</button>
+    <button class="btn-primary" style="background:var(--success);margin-bottom:8px" onclick="sellItem('${id}')">売却を記録する</button>
+    <div style="height:8px"></div>
+  `;
+  openModal('detailModal');
+}
+
+function sellItem(id) {
+  const d = getData();
+  const item = d.items.find(i => i.id === id);
+  if (!item) return;
+
+  const siteNames = SITES.map(s => s.name);
+  const siteName = prompt('どのサイトで売れましたか？\n' + SITES.map((s,i) => `${i+1}: ${s.name}`).join('\n') + '\n番号を入力:');
+  if (!siteName) return;
+  const siteIdx = parseInt(siteName) - 1;
+  if (isNaN(siteIdx) || siteIdx < 0 || siteIdx >= SITES.length) return;
+  const site = SITES[siteIdx];
+  const listing = item.listings.find(l => l.site === site.id);
+  const fees = getFees();
+  const price = listing?.price || 0;
+  const fee = price * (fees[site.id] / 100);
+  const profit = price - fee - (item.purchasePrice || 0) - (item.purchaseShipping || 0) - (item.shippingCost || 0);
+
+  if (!d.history) d.history = [];
+  d.history.unshift({
+    id: Date.now().toString(36),
+    itemId: id,
+    itemName: item.name,
+    site: site.name,
+    sellPrice: price,
+    purchasePrice: item.purchasePrice || 0,
+    profit: Math.round(profit),
+    soldAt: new Date().toISOString(),
+  });
+
+  item.stock = Math.max(0, item.stock - 1);
+  if (item.stock === 0) {
+    item.listings.forEach(l => l.listed = false);
+  }
+
+  saveData(d);
+  closeModal('detailModal');
+  renderStock();
+  alert(`売却記録しました！\n利益: ${profit >= 0 ? '+' : ''}¥${Math.round(profit).toLocaleString()}`);
+}
+
+// ============ PROFIT PAGE ============
+function renderProfitPage() {
+  const segment = document.getElementById('profitSiteSegment');
+  let html = '';
+  SITES.forEach((s, i) => {
+    html += `<button class="segment-btn ${i===0?'active':''}" onclick="selectProfitSite('${s.id}', this)">${s.name}</button>`;
+  });
+  segment.innerHTML = html;
+  calcProfit();
+}
+
+let selectedSiteId = SITES[0].id;
+
+function selectProfitSite(id, btn) {
+  selectedSiteId = id;
+  document.querySelectorAll('.segment-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  calcProfit();
+}
+
+function calcProfit() {
+  const purchase = parseFloat(document.getElementById('calcPurchase').value) || 0;
+  const buyShipping = parseFloat(document.getElementById('calcBuyShipping').value) || 0;
+  const sellPrice = parseFloat(document.getElementById('calcSellPrice').value) || 0;
+  const shipping = parseFloat(document.getElementById('calcShipping').value) || 0;
+  const fees = getFees();
+  const feeRate = fees[selectedSiteId] || 10;
+  const feeAmt = Math.round(sellPrice * feeRate / 100);
+  const totalCost = purchase + buyShipping + shipping + feeAmt;
+  const profit = sellPrice - totalCost;
+  const roi = purchase > 0 ? Math.round((profit / purchase) * 100) : 0;
+
+  const res = document.getElementById('profitResult');
+  if (!sellPrice && !purchase) { res.style.display = 'none'; return; }
+  res.style.display = 'block';
+
+  const site = SITES.find(s => s.id === selectedSiteId);
+  res.innerHTML = `
+    <div class="card-header">${site?.name || ''} 計算結果</div>
+    <div class="profit-result-row"><span class="profit-label">販売価格</span><span class="profit-amount">¥${sellPrice.toLocaleString()}</span></div>
+    <div class="profit-result-row"><span class="profit-label">販売手数料 (${feeRate}%)</span><span class="profit-amount minus">-¥${feeAmt.toLocaleString()}</span></div>
+    <div class="profit-result-row"><span class="profit-label">仕入れ値</span><span class="profit-amount minus">-¥${purchase.toLocaleString()}</span></div>
+    <div class="profit-result-row"><span class="profit-label">仕入れ送料</span><span class="profit-amount minus">-¥${buyShipping.toLocaleString()}</span></div>
+    <div class="profit-result-row"><span class="profit-label">発送送料</span><span class="profit-amount minus">-¥${shipping.toLocaleString()}</span></div>
+    <div class="profit-result-row total">
+      <span class="profit-label">純利益</span>
+      <span class="amount ${profit < 0 ? 'loss' : ''}">${profit >= 0 ? '+' : ''}¥${Math.round(profit).toLocaleString()}</span>
+    </div>
+    <div class="profit-result-row">
+      <span class="profit-label">ROI</span>
+      <span class="profit-amount ${profit < 0 ? 'minus' : ''}">${roi}%</span>
+    </div>
+  `;
+}
+
+// ============ HISTORY PAGE ============
+function renderHistory() {
+  const d = getData();
+  const history = d.history || [];
+  if (history.length === 0) {
+    document.getElementById('historyList').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">履歴がありません</div>
+        <div class="empty-desc">商品を売却すると<br>こちらに履歴が記録されます</div>
+      </div>`;
+    return;
+  }
+
+  const totalProfit = history.reduce((s, h) => s + (h.profit || 0), 0);
+  let html = `
+    <div class="stat-card" style="background:var(--card);border-radius:12px;margin-bottom:12px;padding:16px">
+      <div class="stat-label">累計利益</div>
+      <div class="stat-value" style="color:${totalProfit>=0?'var(--success)':'var(--danger)'}">${totalProfit>=0?'+':''}¥${totalProfit.toLocaleString()}</div>
+      <div style="font-size:12px;color:var(--gray);margin-top:4px">${history.length}件の取引</div>
+    </div>
+    <div class="card">`;
+  history.forEach(h => {
+    const date = new Date(h.soldAt);
+    const dateStr = `${date.getMonth()+1}/${date.getDate()} ${date.getHours()}:${String(date.getMinutes()).padStart(2,'0')}`;
+    html += `
+      <div class="history-row">
+        <div class="history-dot sold"></div>
+        <div style="flex:1">
+          <div class="history-name">${escHtml(h.itemName)}</div>
+          <div class="history-detail">${h.site} / ¥${(h.sellPrice||0).toLocaleString()}</div>
+        </div>
+        <div>
+          <div class="history-amount" style="color:${(h.profit||0)>=0?'var(--success)':'var(--danger)'}">${(h.profit||0)>=0?'+':''}¥${(h.profit||0).toLocaleString()}</div>
+          <div class="history-date">${dateStr}</div>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  document.getElementById('historyList').innerHTML = html;
+}
+
+// ============ SETTINGS PAGE ============
+function renderSettings() {
+  const d = getData();
+  let html = '';
+  SITES.forEach(s => {
+    const fee = d.fees?.[s.id] ?? s.fee;
+    html += `
+      <div class="form-row">
+        <label class="form-label">${s.name}</label>
+        <input type="number" class="form-input" value="${fee}" min="0" max="100" step="0.1"
+          onchange="updateFee('${s.id}', this.value)" inputmode="decimal">
+        <span style="color:var(--gray);font-size:13px">%</span>
+      </div>`;
+  });
+  document.getElementById('feeSettings').innerHTML = html;
+}
+
+function updateFee(siteId, val) {
+  const d = getData();
+  if (!d.fees) d.fees = {};
+  d.fees[siteId] = parseFloat(val) || 0;
+  saveData(d);
+}
+
+function exportData() {
+  const d = getData();
+  const blob = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `sedori_${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (!d.items) throw new Error('invalid');
+      if (!confirm(`${d.items.length}件の商品データをインポートします。現在のデータは上書きされます。`)) return;
+      saveData(d);
+      alert('インポートが完了しました');
+      renderSettings();
+    } catch { alert('無効なファイルです'); }
+  };
+  reader.readAsText(file);
+}
+
+function clearAllData() {
+  if (!confirm('全データを削除しますか？この操作は取り消せません。')) return;
+  localStorage.removeItem('sedori_v2');
+  alert('データを削除しました');
+  renderStock();
+}
+
+// ============ MODAL ============
+function openModal(id) {
+  const el = document.getElementById(id);
+  el.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('addModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('addModal');
+});
+document.getElementById('detailModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal('detailModal');
+});
+
+// ============ UTILS ============
+function escHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ============ INIT ============
+renderStock();
+renderProfitPage();
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
