@@ -225,6 +225,24 @@
   /* Detail photo */
   .detail-photo { width: 100%; height: 200px; object-fit: cover; }
   .detail-photo-wrap { background: var(--bg); }
+
+  /* Drag reorder */
+  .item-row.dragging { opacity: 0.3; }
+  .item-row.drag-over { border-top: 2px solid var(--primary); }
+  .drag-clone {
+    position: fixed; z-index: 999; left: 0; right: 0;
+    background: var(--card); box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    pointer-events: none; opacity: 0.97;
+    transform: scale(1.02);
+  }
+  .drag-handle {
+    padding: 0 8px; color: var(--gray2); font-size: 18px;
+    cursor: grab; flex-shrink: 0; user-select: none;
+  }
+  .reorder-hint {
+    text-align: center; font-size: 12px; color: var(--gray);
+    padding: 6px 0 2px; letter-spacing: 0.2px;
+  }
 </style>
 </head>
 <body>
@@ -495,8 +513,9 @@ function switchTab(tab) {
 // ---- STOCK STATUS ----
 function getStockStatus(item) {
   const listedCount = item.listings.filter(l => l.listed).length;
-  if (item.stock === 0) return 'danger';
-  if (item.stock <= listedCount) return 'warn';
+  if (listedCount === 0) return 'safe'; // 出品していなければ常に安全
+  if (item.stock === 0) return 'danger'; // 出品中なのに在庫0
+  if (item.stock <= listedCount) return 'warn'; // 在庫数 ≤ 出品サイト数
   return 'safe';
 }
 function getBestProfit(item) {
@@ -553,13 +572,8 @@ function renderStock() {
     return;
   }
 
-  const sorted = [...items].sort((a, b) => {
-    const o = { danger: 0, warn: 1, safe: 2 };
-    return o[getStockStatus(a)] - o[getStockStatus(b)];
-  });
-
   let html = '';
-  sorted.forEach(item => {
+  items.forEach(item => {
     const status = getStockStatus(item);
     const listedSites = item.listings.filter(l => l.listed);
     const bestProfit = getBestProfit(item);
@@ -579,7 +593,8 @@ function renderStock() {
     }).join('');
 
     html += `
-      <div class="item-row" onclick="openDetail('${item.id}')">
+      <div class="item-row" data-id="${item.id}" ontouchstart="onDragStart(event,this)" ontouchmove="onDragMove(event)" ontouchend="onDragEnd(event)" onclick="onItemClick(event,'${item.id}')">
+        <div class="drag-handle">⠿</div>
         <div class="item-thumb-wrap">
           ${thumbHTML}
           <div class="stock-badge-overlay ${status}">${item.stock}</div>
@@ -596,7 +611,99 @@ function renderStock() {
         </div>
       </div>`;
   });
-  document.getElementById('itemList').innerHTML = html;
+  document.getElementById('itemList').innerHTML = html + `<div class="reorder-hint">☰ 左端を長押しでドラッグして並び替え</div>`;
+}
+
+// ---- DRAG REORDER ----
+let dragEl = null, dragClone = null, dragStartY = 0, dragItemId = null;
+let longPressTimer = null, isDragging = false, dragDidMove = false;
+
+function onDragStart(e, el) {
+  dragDidMove = false;
+  const touch = e.touches[0];
+  dragStartY = touch.clientY;
+  longPressTimer = setTimeout(() => {
+    isDragging = true;
+    dragEl = el;
+    dragItemId = el.dataset.id;
+    el.classList.add('dragging');
+    // Clone
+    const rect = el.getBoundingClientRect();
+    dragClone = el.cloneNode(true);
+    dragClone.className = 'item-row drag-clone';
+    dragClone.style.top = rect.top + 'px';
+    dragClone.style.width = rect.width + 'px';
+    document.body.appendChild(dragClone);
+    if (navigator.vibrate) navigator.vibrate(30);
+  }, 450);
+}
+
+function onDragMove(e) {
+  dragDidMove = true;
+  if (!isDragging) {
+    // Cancel long press if moved too much before threshold
+    const touch = e.touches[0];
+    if (Math.abs(touch.clientY - dragStartY) > 8) {
+      clearTimeout(longPressTimer);
+    }
+    return;
+  }
+  e.preventDefault();
+  const touch = e.touches[0];
+  const rect = dragEl.getBoundingClientRect();
+  dragClone.style.top = (touch.clientY - rect.height / 2) + 'px';
+
+  // Find target row
+  document.querySelectorAll('.item-row[data-id]').forEach(row => row.classList.remove('drag-over'));
+  const rows = [...document.querySelectorAll('.item-row[data-id]')];
+  for (const row of rows) {
+    if (row === dragEl) continue;
+    const r = row.getBoundingClientRect();
+    if (touch.clientY >= r.top && touch.clientY <= r.bottom) {
+      row.classList.add('drag-over');
+      break;
+    }
+  }
+}
+
+function onDragEnd(e) {
+  clearTimeout(longPressTimer);
+  if (!isDragging) return;
+  isDragging = false;
+
+  if (dragClone) { dragClone.remove(); dragClone = null; }
+  document.querySelectorAll('.item-row[data-id]').forEach(r => { r.classList.remove('dragging','drag-over'); });
+
+  // Find drop target
+  const touch = e.changedTouches[0];
+  const rows = [...document.querySelectorAll('.item-row[data-id]')];
+  let targetId = null;
+  for (const row of rows) {
+    if (row === dragEl) continue;
+    const r = row.getBoundingClientRect();
+    if (touch.clientY >= r.top && touch.clientY <= r.bottom) {
+      targetId = row.dataset.id;
+      break;
+    }
+  }
+
+  if (targetId && targetId !== dragItemId) {
+    const d = getData();
+    const fromIdx = d.items.findIndex(i => i.id === dragItemId);
+    const toIdx = d.items.findIndex(i => i.id === targetId);
+    if (fromIdx !== -1 && toIdx !== -1) {
+      const [moved] = d.items.splice(fromIdx, 1);
+      d.items.splice(toIdx, 0, moved);
+      saveData(d);
+      renderStock();
+    }
+  }
+  dragEl = null; dragItemId = null;
+}
+
+function onItemClick(e, id) {
+  if (dragDidMove) return; // ドラッグ後のクリックを無視
+  openDetail(id);
 }
 
 // ---- PHOTO ----
