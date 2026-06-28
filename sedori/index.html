@@ -73,7 +73,9 @@
     transition: background 0.15s;
   }
   .item-row:last-child { border-bottom: none; }
-  .item-row:active { background: var(--bg); }
+  .item-row:active { opacity: 0.7; }
+  .item-row.status-warn { background: rgba(255,149,0,0.08); }
+  .item-row.status-danger { background: rgba(255,59,48,0.08); }
 
   .item-thumb-wrap { position: relative; flex-shrink: 0; width: 60px; height: 60px; }
   .item-thumb {
@@ -536,10 +538,10 @@ function switchTab(tab) {
 // ---- STOCK STATUS ----
 function getStockStatus(item) {
   const listedCount = item.listings.filter(l => l.listed).length;
-  if (listedCount === 0) return 'safe'; // 出品していなければ常に安全
-  if (item.stock === 0) return 'danger'; // 出品中なのに在庫0
-  if (item.stock <= listedCount) return 'warn'; // 在庫数 ≤ 出品サイト数
-  return 'safe';
+  if (listedCount === 0) return 'safe';        // 出品なし→安全
+  if (item.stock === 0) return 'danger';       // 出品中なのに在庫0
+  if (listedCount > item.stock) return 'warn'; // 出品数 > 在庫数のみ警告
+  return 'safe';                               // 在庫数 ≥ 出品数→安全
 }
 function getBestProfit(item) {
   const fees = getFees();
@@ -568,20 +570,14 @@ function renderStock() {
     <div class="stat-card"><div class="stat-label">商品数</div><div class="stat-value" style="color:var(--primary)">${items.length}</div></div>
   `;
 
-  const alertItems = items.filter(i => getStockStatus(i) !== 'safe');
+  const dangerItems = items.filter(i => getStockStatus(i) === 'danger');
+  const warnItems = items.filter(i => getStockStatus(i) === 'warn');
   let alertHTML = '';
-  if (alertItems.length > 0) {
-    alertHTML = `<div class="alert-banner"><div class="alert-icon">⚠️</div><div class="alert-text">`;
-    alertItems.forEach(i => {
-      const cnt = i.listings.filter(l => l.listed).length;
-      const n = [i.name1, i.name2, i.name3].filter(Boolean).join(' ');
-      if (getStockStatus(i) === 'danger') {
-        alertHTML += `<b>${escHtml(n)}</b>：在庫0・${cnt}サイト出品中！取り下げ必須<br>`;
-      } else {
-        alertHTML += `<b>${escHtml(n)}</b>：在庫${i.stock}個・${cnt}サイト出品中・要注意<br>`;
-      }
-    });
-    alertHTML += `</div></div>`;
+  if (dangerItems.length > 0) {
+    alertHTML += `<div class="alert-banner"><div class="alert-icon">🚨</div><div class="alert-text">在庫切れで出品中の商品が<b>${dangerItems.length}件</b>あります。すぐに取り下げてください。</div></div>`;
+  }
+  if (warnItems.length > 0) {
+    alertHTML += `<div class="alert-banner" style="background:rgba(255,149,0,0.1);border-color:rgba(255,149,0,0.3)"><div class="alert-icon">⚠️</div><div class="alert-text" style="color:var(--warning)">出品数が在庫数を超えている商品が<b>${warnItems.length}件</b>あります。</div></div>`;
   }
   document.getElementById('alertBanners').innerHTML = alertHTML;
 
@@ -616,7 +612,7 @@ function renderStock() {
     }).join('');
 
     html += `
-      <div class="item-row" data-id="${item.id}" ontouchstart="onDragStart(event,this)" ontouchmove="onDragMove(event)" ontouchend="onDragEnd(event)" onclick="onItemClick(event,'${item.id}')">
+      <div class="item-row${status !== 'safe' ? ' status-'+status : ''}" data-id="${item.id}" ontouchstart="onDragStart(event,this)" ontouchmove="onDragMove(event)" ontouchend="onDragEnd(event)" onclick="onItemClick(event,'${item.id}')">
         <div class="drag-handle">⠿</div>
         <div class="item-thumb-wrap">
           ${thumbHTML}
