@@ -66,9 +66,9 @@
   .stat-card.warning .stat-value { color: var(--warning); }
   .stat-card.success .stat-value { color: var(--success); }
 
-  /* Item row with photo */
+  /* Item row */
   .item-row {
-    display: flex; align-items: center; padding: 10px 12px;
+    display: flex; align-items: flex-start; padding: 10px 12px;
     border-bottom: 1px solid var(--border); gap: 10px; cursor: pointer;
     transition: background 0.15s;
   }
@@ -77,22 +77,14 @@
   .item-row.status-warn { background: rgba(255,149,0,0.08); }
   .item-row.status-danger { background: rgba(255,59,48,0.08); }
 
-  .item-thumb-wrap { position: relative; flex-shrink: 0; width: 60px; height: 60px; }
-  .item-thumb {
-    width: 60px; height: 60px; border-radius: 10px; object-fit: cover;
-    background: var(--bg); display: block;
-  }
-  .item-thumb-placeholder {
-    width: 60px; height: 60px; border-radius: 10px;
-    background: var(--bg); display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-  }
+  .item-thumb-wrap { position: relative; flex-shrink: 0; width: 60px; height: 60px; margin-top: 2px; }
+  .item-thumb { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; background: var(--bg); display: block; }
+  .item-thumb-placeholder { width: 60px; height: 60px; border-radius: 10px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 26px; }
   .stock-badge-overlay {
     position: absolute; bottom: -4px; right: -4px;
     min-width: 24px; height: 24px; border-radius: 7px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 800; border: 2px solid white;
-    padding: 0 4px;
+    font-size: 13px; font-weight: 800; border: 2px solid white; padding: 0 4px;
   }
   .stock-badge-overlay.safe { background: var(--success); color: white; }
   .stock-badge-overlay.warn { background: var(--warning); color: white; }
@@ -103,15 +95,33 @@
   .item-name2 { font-size: 15px; font-weight: 700; line-height: 1.2; word-break: break-all; margin-top: 1px; }
   .item-name3 { font-size: 13px; color: var(--primary); font-weight: 600; margin-top: 1px; }
 
-  .site-dots { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 4px; }
-  .site-dot { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; white-space: nowrap; }
-  .site-dot.listed { background: rgba(0,122,255,0.12); color: var(--primary); }
-  .site-dot.unlisted { background: var(--bg); color: var(--gray2); }
+  /* Stock availability line */
+  .stock-line {
+    display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; align-items: center;
+  }
+  .stock-pill {
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+  }
+  .stock-pill.stock { background: rgba(0,122,255,0.1); color: var(--primary); }
+  .stock-pill.need { background: rgba(142,142,147,0.12); color: var(--text2); }
+  .stock-pill.avail-ok { background: rgba(52,199,89,0.15); color: var(--success); }
+  .stock-pill.avail-zero { background: rgba(255,149,0,0.15); color: var(--warning); }
+  .stock-pill.avail-minus { background: rgba(255,59,48,0.15); color: var(--danger); }
 
-  .item-right { text-align: right; flex-shrink: 0; }
-  .item-profit { font-size: 14px; font-weight: 700; color: var(--success); }
-  .item-profit.loss { color: var(--danger); }
-  .item-sites { font-size: 10px; color: var(--gray); margin-top: 2px; }
+  /* Site rows (2段表示) */
+  .site-rows { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+  .site-row-line { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .site-chip-name {
+    font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+    background: var(--bg); color: var(--gray); white-space: nowrap;
+  }
+  .site-chip-name.active { background: rgba(0,122,255,0.12); color: var(--primary); }
+  .listing-pat {
+    font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px;
+    background: rgba(0,122,255,0.1); color: var(--primary); white-space: nowrap;
+  }
+  .listing-pat.off { background: var(--bg); color: var(--gray2); text-decoration: line-through; }
+  .no-listing { font-size: 11px; color: var(--gray2); }
 
   .alert-banner {
     background: rgba(255,59,48,0.1); border: 1px solid rgba(255,59,48,0.3);
@@ -145,7 +155,6 @@
   .form-input::placeholder { color: var(--gray2); }
   select.form-input { -webkit-appearance: none; appearance: none; }
 
-  /* Photo upload */
   .photo-upload-area {
     margin: 0 16px 16px; background: var(--card); border-radius: 12px;
     padding: 16px; display: flex; align-items: center; gap: 14px;
@@ -157,30 +166,44 @@
   }
   .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
   .photo-btns { display: flex; flex-direction: column; gap: 8px; }
-  .photo-btn {
-    background: var(--primary); color: white; border: none; border-radius: 8px;
-    padding: 8px 16px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-  }
+  .photo-btn { background: var(--primary); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
   .photo-btn.remove { background: rgba(255,59,48,0.1); color: var(--danger); }
 
-  .site-toggle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 16px; }
-  .site-toggle { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--bg); border-radius: 10px; padding: 10px 8px; cursor: pointer; }
-  .site-toggle input { display: none; }
-  .site-toggle-check {
-    width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--gray2);
-    display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+  /* Listing editor */
+  .listing-edit-site { border-bottom: 1px solid var(--border); }
+  .listing-edit-site:last-child { border-bottom: none; }
+  .listing-edit-site-header {
+    display: flex; align-items: center; padding: 11px 16px 6px; gap: 8px;
   }
-  .site-toggle input:checked ~ .site-toggle-check { background: var(--primary); border-color: var(--primary); color: white; }
-  .site-toggle-check::after { content: '✓'; font-size: 14px; font-weight: 700; opacity: 0; }
-  .site-toggle input:checked ~ .site-toggle-check::after { opacity: 1; }
-  .site-toggle-name { font-size: 11px; font-weight: 600; text-align: center; }
-
-  .price-row { display: flex; align-items: center; padding: 11px 16px; border-bottom: 1px solid var(--border); gap: 8px; }
-  .price-row:last-child { border-bottom: none; }
-  .price-site-name { font-size: 13px; font-weight: 600; flex: 1; }
-  .price-input-wrap { display: flex; align-items: center; gap: 4px; }
-  .price-input-wrap span { font-size: 13px; color: var(--gray); }
-  .price-input { width: 90px; border: none; outline: none; font-size: 15px; text-align: right; color: var(--text); background: transparent; font-family: inherit; }
+  .listing-edit-site-name { font-size: 14px; font-weight: 700; flex: 1; }
+  .add-pattern-btn {
+    background: rgba(0,122,255,0.1); color: var(--primary); border: none;
+    border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .pattern-row {
+    display: flex; align-items: center; gap: 8px; padding: 6px 16px 6px 24px;
+  }
+  .pattern-qty-wrap, .pattern-price-wrap { display: flex; align-items: center; gap: 3px; }
+  .pattern-qty {
+    width: 42px; border: 1px solid var(--border); border-radius: 7px; padding: 6px 4px;
+    font-size: 14px; text-align: center; font-family: inherit; outline: none; background: var(--bg);
+  }
+  .pattern-price {
+    width: 84px; border: 1px solid var(--border); border-radius: 7px; padding: 6px;
+    font-size: 14px; text-align: right; font-family: inherit; outline: none; background: var(--bg);
+  }
+  .pattern-unit { font-size: 12px; color: var(--gray); }
+  .pattern-listed-toggle {
+    display: flex; align-items: center; gap: 4px; margin-left: auto;
+  }
+  .pattern-listed-toggle input { width: 20px; height: 20px; accent-color: var(--primary); }
+  .pattern-listed-toggle span { font-size: 11px; color: var(--gray); }
+  .pattern-del {
+    background: none; border: none; color: var(--danger); font-size: 18px;
+    cursor: pointer; padding: 2px 4px; line-height: 1;
+  }
+  .listing-edit-empty { font-size: 12px; color: var(--gray2); padding: 0 16px 10px 24px; }
 
   .btn-primary { display: block; width: calc(100% - 32px); margin: 0 16px 12px; background: var(--primary); color: white; border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; }
   .btn-success { display: block; width: calc(100% - 32px); margin: 0 16px 12px; background: var(--success); color: white; border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; }
@@ -224,7 +247,6 @@
   .history-amount { font-size: 14px; font-weight: 700; text-align: right; }
   .history-date { font-size: 11px; color: var(--gray); text-align: right; margin-top: 2px; }
 
-  /* Detail photo */
   .detail-photo { width: 100%; height: 200px; object-fit: cover; }
   .detail-photo-wrap { background: var(--bg); }
 
@@ -234,16 +256,27 @@
   .drag-clone {
     position: fixed; z-index: 999; left: 0; right: 0;
     background: var(--card); box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-    pointer-events: none; opacity: 0.97;
-    transform: scale(1.02);
+    pointer-events: none; opacity: 0.97; transform: scale(1.02);
   }
-  .drag-handle {
-    padding: 0 8px; color: var(--gray2); font-size: 18px;
-    cursor: grab; flex-shrink: 0; user-select: none;
+  .drag-handle { padding: 8px 6px; color: var(--gray2); font-size: 18px; cursor: grab; flex-shrink: 0; user-select: none; }
+  .reorder-hint { text-align: center; font-size: 12px; color: var(--gray); padding: 6px 0 2px; letter-spacing: 0.2px; }
+
+  /* Settings site toggles */
+  .mysite-toggle { display: flex; align-items: center; padding: 11px 16px; border-bottom: 1px solid var(--border); gap: 12px; }
+  .mysite-toggle:last-child { border-bottom: none; }
+  .mysite-toggle span { flex: 1; font-size: 15px; }
+  .mysite-toggle input { width: 22px; height: 22px; accent-color: var(--primary); }
+
+  /* Sell option button */
+  .sell-option {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; background: var(--card); border: none; border-radius: 12px;
+    padding: 16px; font-size: 15px; font-weight: 600; text-align: left;
+    margin-bottom: 10px; cursor: pointer; font-family: inherit; color: var(--text);
   }
-  .reorder-hint {
-    text-align: center; font-size: 12px; color: var(--gray);
-    padding: 6px 0 2px; letter-spacing: 0.2px;
+  .sell-option .qty-tag {
+    background: rgba(0,122,255,0.12); color: var(--primary);
+    font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 7px;
   }
 </style>
 </head>
@@ -264,13 +297,7 @@
     <div class="stats-grid" id="statsGrid"></div>
     <div id="alertBanners"></div>
     <div class="section-title">商品一覧</div>
-    <div class="card" id="itemList">
-      <div class="empty-state">
-        <div class="empty-icon">📦</div>
-        <div class="empty-title">商品がありません</div>
-        <div class="empty-desc">右上の「＋ 追加」ボタンで<br>商品を登録してください</div>
-      </div>
-    </div>
+    <div class="card" id="itemList"></div>
   </div>
 
   <!-- 利益計算ページ -->
@@ -309,20 +336,20 @@
   <!-- 履歴ページ -->
   <div class="page" id="page-history">
     <div class="section-title">売買履歴</div>
-    <div id="historyContent">
-      <div class="card">
-        <div class="empty-state">
-          <div class="empty-icon">📋</div>
-          <div class="empty-title">履歴がありません</div>
-          <div class="empty-desc">商品を売却すると<br>こちらに履歴が記録されます</div>
-        </div>
-      </div>
-    </div>
+    <div id="historyContent"></div>
   </div>
 
   <!-- 設定ページ -->
   <div class="page" id="page-settings">
     <div class="section-title">設定</div>
+    <div class="card">
+      <div class="card-header">使用するサイト（このスマホでの表示）</div>
+      <div id="mySiteSettings"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">手数料設定 (%)</div>
+      <div id="feeSettings"></div>
+    </div>
     <div class="card">
       <div class="card-header">データ管理</div>
       <div class="form-row" style="cursor:pointer" onclick="exportData()">
@@ -340,14 +367,10 @@
       </div>
     </div>
     <div class="card">
-      <div class="card-header">手数料設定 (%)</div>
-      <div id="feeSettings"></div>
-    </div>
-    <div class="card">
       <div class="card-header">アプリ情報</div>
       <div class="form-row">
         <span style="flex:1;font-size:15px">バージョン</span>
-        <span style="color:var(--gray)">2.0.0</span>
+        <span style="color:var(--gray)">3.0.0</span>
       </div>
       <div class="form-row">
         <span style="flex:1;font-size:15px">データ保存</span>
@@ -379,7 +402,6 @@
     <div class="modal-handle"></div>
     <div class="modal-title" id="modalTitle">商品を追加</div>
 
-    <!-- 写真 -->
     <div class="photo-upload-area">
       <div class="photo-preview" id="photoPreview">📷</div>
       <div class="photo-btns">
@@ -393,15 +415,15 @@
       <div class="form-section-label">商品名（3行）</div>
       <div class="form-row">
         <label class="form-label" style="color:var(--gray);font-size:13px">ブランド</label>
-        <input type="text" class="form-input" id="f_name1" placeholder="例: オハナマハロ">
+        <input type="text" class="form-input" id="f_name1" placeholder="例: PING">
       </div>
       <div class="form-row">
         <label class="form-label" style="color:var(--gray);font-size:13px">商品名</label>
-        <input type="text" class="form-input" id="f_name2" placeholder="例: ファブリックミスト">
+        <input type="text" class="form-input" id="f_name2" placeholder="例: G440 ハイブリッド">
       </div>
       <div class="form-row">
-        <label class="form-label" style="color:var(--gray);font-size:13px">香り・特徴</label>
-        <input type="text" class="form-input" id="f_name3" placeholder="例: ハリーアノヘア">
+        <label class="form-label" style="color:var(--gray);font-size:13px">特徴</label>
+        <input type="text" class="form-input" id="f_name3" placeholder="例: 3HB">
       </div>
       <div class="form-row">
         <label class="form-label">在庫数</label>
@@ -412,7 +434,7 @@
     <div class="form-section">
       <div class="form-section-label">仕入れ情報</div>
       <div class="form-row">
-        <label class="form-label">仕入れ値</label>
+        <label class="form-label">仕入れ値<br><span style="font-size:11px;color:var(--gray)">(1個あたり)</span></label>
         <span style="color:var(--gray);font-size:13px">¥</span>
         <input type="number" class="form-input" id="f_purchase" placeholder="0" inputmode="numeric">
       </div>
@@ -443,13 +465,8 @@
     </div>
 
     <div class="form-section">
-      <div class="form-section-label">出品サイト & 販売価格</div>
-      <div id="sitePriceRows"></div>
-    </div>
-
-    <div class="form-section" style="padding:8px 0">
-      <div class="form-section-label" style="padding:10px 16px 8px">出品中のサイト</div>
-      <div class="site-toggle-grid" id="siteToggles"></div>
+      <div class="form-section-label">出品パターン（サイト・個数・価格）</div>
+      <div id="listingEditor"></div>
     </div>
 
     <button class="btn-primary" onclick="saveItem()">保存する</button>
@@ -466,12 +483,12 @@
   </div>
 </div>
 
-<!-- Sell Site Picker Modal -->
+<!-- Sell Picker Modal -->
 <div class="modal-overlay" id="sellModal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">売れたサイトを選択</div>
-    <div id="sellSiteList" style="padding:0 16px 16px"></div>
+    <div class="modal-title">どの出品が売れましたか？</div>
+    <div id="sellOptionList" style="padding:0 16px 8px"></div>
     <button class="btn-danger" onclick="closeModal('sellModal')">キャンセル</button>
     <div style="height:8px"></div>
   </div>
@@ -484,12 +501,33 @@ const SITES = [
   { id: 'yahoo_fleamarket', name: 'ヤフーフリマ', fee: 5 },
 ];
 
+// ---- DATA (v4: listings = [{id, site, qty, price, listed}] 複数パターン対応) ----
 function getData() {
-  // v3データがあればそのまま使う
-  const v3 = localStorage.getItem('sedori_v3');
-  if (v3) return JSON.parse(v3);
+  const v4 = localStorage.getItem('sedori_v4');
+  if (v4) return JSON.parse(v4);
 
-  // v2データがあれば移行する
+  // v3からの移行
+  const v3 = localStorage.getItem('sedori_v3');
+  if (v3) {
+    const old = JSON.parse(v3);
+    old.items = (old.items || []).map(item => ({
+      ...item,
+      listings: (item.listings || [])
+        .filter(l => l.listed || l.price) // 何も設定していないものは除去
+        .map((l, i) => ({
+          id: 'mig' + i + Math.random().toString(36).slice(2, 6),
+          site: l.site,
+          qty: 1,
+          price: l.price || 0,
+          listed: !!l.listed,
+        })),
+    }));
+    saveData(old);
+    localStorage.removeItem('sedori_v3');
+    return old;
+  }
+
+  // v2からの移行（念のため）
   const v2 = localStorage.getItem('sedori_v2');
   if (v2) {
     const old = JSON.parse(v2);
@@ -498,10 +536,12 @@ function getData() {
       name1: item.name1 || '',
       name2: item.name2 || item.name || '',
       name3: item.name3 || item.subtitle || '',
-      // 古いサイトデータをフィルタ（3サイトのみ残す）
-      listings: (item.listings || []).filter(l =>
-        ['yahoo_auction','mercari','yahoo_fleamarket'].includes(l.site)
-      ),
+      listings: (item.listings || [])
+        .filter(l => ['yahoo_auction','mercari','yahoo_fleamarket'].includes(l.site) && (l.listed || l.price))
+        .map((l, i) => ({
+          id: 'mig' + i + Math.random().toString(36).slice(2, 6),
+          site: l.site, qty: 1, price: l.price || 0, listed: !!l.listed,
+        })),
     }));
     saveData(old);
     localStorage.removeItem('sedori_v2');
@@ -511,13 +551,23 @@ function getData() {
   return { items: [], history: [], fees: {} };
 }
 function saveData(d) {
-  localStorage.setItem('sedori_v3', JSON.stringify(d));
+  localStorage.setItem('sedori_v4', JSON.stringify(d));
 }
 function getFees() {
   const d = getData();
   const fees = {};
   SITES.forEach(s => { fees[s.id] = d.fees?.[s.id] ?? s.fee; });
   return fees;
+}
+
+// ---- 使用サイト設定（デバイスごと） ----
+function getMySites() {
+  const saved = localStorage.getItem('sedori_mysites');
+  if (saved) return JSON.parse(saved);
+  return SITES.map(s => s.id); // デフォルト全部
+}
+function setMySites(ids) {
+  localStorage.setItem('sedori_mysites', JSON.stringify(ids));
 }
 
 // ---- TABS ----
@@ -536,20 +586,25 @@ function switchTab(tab) {
 }
 
 // ---- STOCK STATUS ----
+// 必要在庫数 = 出品中パターンの個数合計
+function getNeeded(item) {
+  return (item.listings || []).filter(l => l.listed).reduce((s, l) => s + (l.qty || 1), 0);
+}
 function getStockStatus(item) {
-  const listedCount = item.listings.filter(l => l.listed).length;
-  if (listedCount === 0) return 'safe';        // 出品なし→安全
-  if (item.stock === 0) return 'danger';       // 出品中なのに在庫0
-  if (listedCount > item.stock) return 'warn'; // 出品数 > 在庫数のみ警告
-  return 'safe';                               // 在庫数 ≥ 出品数→安全
+  const needed = getNeeded(item);
+  if (needed === 0) return 'safe';           // 出品なし→安全
+  if (item.stock === 0) return 'danger';     // 出品中なのに在庫0
+  if (needed > item.stock) return 'warn';    // 必要数 > 在庫数
+  return 'safe';
 }
 function getBestProfit(item) {
   const fees = getFees();
   let best = null;
-  item.listings.forEach(l => {
+  (item.listings || []).forEach(l => {
     if (!l.price) return;
+    const qty = l.qty || 1;
     const fee = l.price * (fees[l.site] / 100);
-    const profit = l.price - fee - (item.purchasePrice || 0) - (item.purchaseShipping || 0) - (item.shippingCost || 0);
+    const profit = l.price - fee - (item.purchasePrice || 0) * qty - (item.purchaseShipping || 0) - (item.shippingCost || 0);
     if (best === null || profit > best) best = profit;
   });
   return best;
@@ -559,25 +614,24 @@ function getBestProfit(item) {
 function renderStock() {
   const d = getData();
   const items = d.items;
+  const mySites = getMySites();
   const danger = items.filter(i => getStockStatus(i) === 'danger').length;
   const warn = items.filter(i => getStockStatus(i) === 'warn').length;
   const safe = items.filter(i => getStockStatus(i) === 'safe').length;
 
   document.getElementById('statsGrid').innerHTML = `
-    <div class="stat-card danger"><div class="stat-label">在庫なし</div><div class="stat-value">${danger}</div></div>
+    <div class="stat-card danger"><div class="stat-label">在庫切れ出品</div><div class="stat-value">${danger}</div></div>
     <div class="stat-card warning"><div class="stat-label">要注意</div><div class="stat-value">${warn}</div></div>
     <div class="stat-card success"><div class="stat-label">安全</div><div class="stat-value">${safe}</div></div>
     <div class="stat-card"><div class="stat-label">商品数</div><div class="stat-value" style="color:var(--primary)">${items.length}</div></div>
   `;
 
-  const dangerItems = items.filter(i => getStockStatus(i) === 'danger');
-  const warnItems = items.filter(i => getStockStatus(i) === 'warn');
   let alertHTML = '';
-  if (dangerItems.length > 0) {
-    alertHTML += `<div class="alert-banner"><div class="alert-icon">🚨</div><div class="alert-text">在庫切れで出品中の商品が<b>${dangerItems.length}件</b>あります。すぐに取り下げてください。</div></div>`;
+  if (danger > 0) {
+    alertHTML += `<div class="alert-banner"><div class="alert-icon">🚨</div><div class="alert-text">在庫切れで出品中の商品が<b>${danger}件</b>あります。すぐに取り下げてください。</div></div>`;
   }
-  if (warnItems.length > 0) {
-    alertHTML += `<div class="alert-banner" style="background:rgba(255,149,0,0.1);border-color:rgba(255,149,0,0.3)"><div class="alert-icon">⚠️</div><div class="alert-text" style="color:var(--warning)">出品数が在庫数を超えている商品が<b>${warnItems.length}件</b>あります。</div></div>`;
+  if (warn > 0) {
+    alertHTML += `<div class="alert-banner" style="background:rgba(255,149,0,0.1);border-color:rgba(255,149,0,0.3)"><div class="alert-icon">⚠️</div><div class="alert-text" style="color:var(--warning)">出品に必要な数が在庫を超えている商品が<b>${warn}件</b>あります。</div></div>`;
   }
   document.getElementById('alertBanners').innerHTML = alertHTML;
 
@@ -594,22 +648,39 @@ function renderStock() {
   let html = '';
   items.forEach(item => {
     const status = getStockStatus(item);
-    const listedSites = item.listings.filter(l => l.listed);
-    const bestProfit = getBestProfit(item);
-    const profitStr = bestProfit !== null
-      ? (bestProfit >= 0 ? `+¥${Math.round(bestProfit).toLocaleString()}` : `-¥${Math.abs(Math.round(bestProfit)).toLocaleString()}`)
-      : '—';
-    const profitClass = bestProfit !== null && bestProfit < 0 ? 'loss' : '';
+    const needed = getNeeded(item);
+    const avail = item.stock - needed;
 
     const thumbHTML = item.photo
       ? `<img class="item-thumb" src="${item.photo}" alt="">`
       : `<div class="item-thumb-placeholder">📦</div>`;
 
-    const siteDots = SITES.map(s => {
-      const l = item.listings.find(x => x.site === s.id);
-      if (!l) return '';
-      return `<span class="site-dot ${l.listed ? 'listed' : 'unlisted'}">${s.name}</span>`;
-    }).join('');
+    // 余裕バッジ
+    let availClass = 'avail-ok', availLabel = `余裕${avail}`;
+    if (avail < 0) { availClass = 'avail-minus'; availLabel = `不足${Math.abs(avail)}`; }
+    else if (avail === 0) { availClass = 'avail-zero'; availLabel = '余裕0'; }
+
+    // 使用サイトのみ2段表示（1段目:1サイト目 / 2段目:残り）※柔軟にサイトごとに1行
+    const visibleSites = SITES.filter(s => mySites.includes(s.id));
+    let siteRowsHTML = '<div class="site-rows">';
+    visibleSites.forEach(s => {
+      const pats = (item.listings || []).filter(l => l.site === s.id);
+      const hasActive = pats.some(p => p.listed);
+      let patHTML = '';
+      if (pats.length === 0) {
+        patHTML = `<span class="no-listing">未出品</span>`;
+      } else {
+        patHTML = pats.map(p =>
+          `<span class="listing-pat ${p.listed ? '' : 'off'}">${p.qty}個 ¥${(p.price||0).toLocaleString()}</span>`
+        ).join('');
+      }
+      siteRowsHTML += `
+        <div class="site-row-line">
+          <span class="site-chip-name ${hasActive ? 'active' : ''}">${s.name}</span>
+          ${patHTML}
+        </div>`;
+    });
+    siteRowsHTML += '</div>';
 
     html += `
       <div class="item-row${status !== 'safe' ? ' status-'+status : ''}" data-id="${item.id}" ontouchstart="onDragStart(event,this)" ontouchmove="onDragMove(event)" ontouchend="onDragEnd(event)" onclick="onItemClick(event,'${item.id}')">
@@ -622,11 +693,12 @@ function renderStock() {
           ${item.name1 ? `<div class="item-name1">${escHtml(item.name1)}</div>` : ''}
           ${item.name2 ? `<div class="item-name2">${escHtml(item.name2)}</div>` : ''}
           ${item.name3 ? `<div class="item-name3">${escHtml(item.name3)}</div>` : ''}
-          <div class="site-dots">${siteDots}</div>
-        </div>
-        <div class="item-right">
-          <div class="item-profit ${profitClass}">${profitStr}</div>
-          <div class="item-sites">${listedSites.length}サイト</div>
+          <div class="stock-line">
+            <span class="stock-pill stock">在庫${item.stock}</span>
+            <span class="stock-pill need">出品${needed}</span>
+            <span class="stock-pill ${availClass}">${availLabel}</span>
+          </div>
+          ${siteRowsHTML}
         </div>
       </div>`;
   });
@@ -646,7 +718,6 @@ function onDragStart(e, el) {
     dragEl = el;
     dragItemId = el.dataset.id;
     el.classList.add('dragging');
-    // Clone
     const rect = el.getBoundingClientRect();
     dragClone = el.cloneNode(true);
     dragClone.className = 'item-row drag-clone';
@@ -660,19 +731,14 @@ function onDragStart(e, el) {
 function onDragMove(e) {
   dragDidMove = true;
   if (!isDragging) {
-    // Cancel long press if moved too much before threshold
     const touch = e.touches[0];
-    if (Math.abs(touch.clientY - dragStartY) > 8) {
-      clearTimeout(longPressTimer);
-    }
+    if (Math.abs(touch.clientY - dragStartY) > 8) clearTimeout(longPressTimer);
     return;
   }
   e.preventDefault();
   const touch = e.touches[0];
   const rect = dragEl.getBoundingClientRect();
   dragClone.style.top = (touch.clientY - rect.height / 2) + 'px';
-
-  // Find target row
   document.querySelectorAll('.item-row[data-id]').forEach(row => row.classList.remove('drag-over'));
   const rows = [...document.querySelectorAll('.item-row[data-id]')];
   for (const row of rows) {
@@ -689,23 +755,16 @@ function onDragEnd(e) {
   clearTimeout(longPressTimer);
   if (!isDragging) return;
   isDragging = false;
-
   if (dragClone) { dragClone.remove(); dragClone = null; }
-  document.querySelectorAll('.item-row[data-id]').forEach(r => { r.classList.remove('dragging','drag-over'); });
-
-  // Find drop target
+  document.querySelectorAll('.item-row[data-id]').forEach(r => r.classList.remove('dragging','drag-over'));
   const touch = e.changedTouches[0];
   const rows = [...document.querySelectorAll('.item-row[data-id]')];
   let targetId = null;
   for (const row of rows) {
     if (row === dragEl) continue;
     const r = row.getBoundingClientRect();
-    if (touch.clientY >= r.top && touch.clientY <= r.bottom) {
-      targetId = row.dataset.id;
-      break;
-    }
+    if (touch.clientY >= r.top && touch.clientY <= r.bottom) { targetId = row.dataset.id; break; }
   }
-
   if (targetId && targetId !== dragItemId) {
     const d = getData();
     const fromIdx = d.items.findIndex(i => i.id === dragItemId);
@@ -721,7 +780,7 @@ function onDragEnd(e) {
 }
 
 function onItemClick(e, id) {
-  if (dragDidMove) return; // ドラッグ後のクリックを無視
+  if (dragDidMove) return;
   openDetail(id);
 }
 
@@ -733,7 +792,6 @@ function handlePhoto(e) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    // Resize to max 600px to save storage
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
@@ -771,12 +829,79 @@ function removePhoto() {
   updatePhotoPreview();
 }
 
+// ---- LISTING EDITOR（出品パターン編集） ----
+let editListings = []; // {id, site, qty, price, listed}
+
+function renderListingEditor() {
+  const mySites = getMySites();
+  let html = '';
+  SITES.forEach(s => {
+    // 使用しないサイトでもパターンが存在すれば表示する（消えると困るので）
+    const pats = editListings.filter(l => l.site === s.id);
+    if (!mySites.includes(s.id) && pats.length === 0) return;
+
+    html += `<div class="listing-edit-site">
+      <div class="listing-edit-site-header">
+        <span class="listing-edit-site-name">${s.name}</span>
+        <button class="add-pattern-btn" onclick="addPattern('${s.id}')">＋ パターン追加</button>
+      </div>`;
+    if (pats.length === 0) {
+      html += `<div class="listing-edit-empty">出品なし</div>`;
+    } else {
+      pats.forEach(p => {
+        html += `
+          <div class="pattern-row">
+            <div class="pattern-qty-wrap">
+              <input type="number" class="pattern-qty" value="${p.qty}" min="1" inputmode="numeric"
+                onchange="updatePattern('${p.id}','qty',this.value)">
+              <span class="pattern-unit">個</span>
+            </div>
+            <div class="pattern-price-wrap">
+              <span class="pattern-unit">¥</span>
+              <input type="number" class="pattern-price" value="${p.price || ''}" placeholder="価格" inputmode="numeric"
+                onchange="updatePattern('${p.id}','price',this.value)">
+            </div>
+            <label class="pattern-listed-toggle">
+              <input type="checkbox" ${p.listed ? 'checked' : ''} onchange="updatePattern('${p.id}','listed',this.checked)">
+              <span>出品中</span>
+            </label>
+            <button class="pattern-del" onclick="removePattern('${p.id}')">✕</button>
+          </div>`;
+      });
+    }
+    html += `</div>`;
+  });
+  document.getElementById('listingEditor').innerHTML = html;
+}
+
+function addPattern(siteId) {
+  editListings.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    site: siteId, qty: 1, price: 0, listed: true,
+  });
+  renderListingEditor();
+}
+
+function updatePattern(pid, key, val) {
+  const p = editListings.find(l => l.id === pid);
+  if (!p) return;
+  if (key === 'qty') p.qty = Math.max(1, parseInt(val) || 1);
+  if (key === 'price') p.price = parseFloat(val) || 0;
+  if (key === 'listed') p.listed = !!val;
+}
+
+function removePattern(pid) {
+  editListings = editListings.filter(l => l.id !== pid);
+  renderListingEditor();
+}
+
 // ---- ADD/EDIT MODAL ----
 let editingId = null;
 
 function openAddModal() {
   editingId = null;
   currentPhoto = null;
+  editListings = [];
   document.getElementById('modalTitle').textContent = '商品を追加';
   document.getElementById('deleteBtn').style.display = 'none';
   ['f_name1','f_name2','f_name3','f_note'].forEach(id => document.getElementById(id).value = '');
@@ -786,7 +911,7 @@ function openAddModal() {
   document.getElementById('f_source').value = '実店舗';
   document.getElementById('f_shipping').value = '';
   updatePhotoPreview();
-  renderSiteToggles(SITES.map(s => ({ site: s.id, listed: false, price: '' })));
+  renderListingEditor();
   openModal('addModal');
 }
 
@@ -796,6 +921,7 @@ function openEditModal(id) {
   if (!item) return;
   editingId = id;
   currentPhoto = item.photo || null;
+  editListings = JSON.parse(JSON.stringify(item.listings || []));
   document.getElementById('modalTitle').textContent = '商品を編集';
   document.getElementById('deleteBtn').style.display = 'block';
   document.getElementById('f_name1').value = item.name1 || '';
@@ -808,49 +934,14 @@ function openEditModal(id) {
   document.getElementById('f_shipping').value = item.shippingCost || '';
   document.getElementById('f_note').value = item.note || '';
   updatePhotoPreview();
-  const listings = SITES.map(s => item.listings.find(l => l.site === s.id) || { site: s.id, listed: false, price: '' });
-  renderSiteToggles(listings);
+  renderListingEditor();
   closeModal('detailModal');
   openModal('addModal');
-}
-
-function renderSiteToggles(listings) {
-  let priceHTML = '';
-  SITES.forEach(s => {
-    const l = listings.find(x => x.site === s.id) || { price: '' };
-    priceHTML += `
-      <div class="price-row">
-        <div class="price-site-name">${s.name}</div>
-        <div class="price-input-wrap">
-          <span>¥</span>
-          <input type="number" class="price-input" id="price_${s.id}" placeholder="販売価格" value="${l.price || ''}" inputmode="numeric">
-        </div>
-      </div>`;
-  });
-  document.getElementById('sitePriceRows').innerHTML = priceHTML;
-
-  let toggleHTML = '';
-  SITES.forEach(s => {
-    const l = listings.find(x => x.site === s.id) || { listed: false };
-    toggleHTML += `
-      <label class="site-toggle">
-        <input type="checkbox" id="toggle_${s.id}" ${l.listed ? 'checked' : ''}>
-        <div class="site-toggle-check"></div>
-        <span class="site-toggle-name">${s.name}</span>
-      </label>`;
-  });
-  document.getElementById('siteToggles').innerHTML = toggleHTML;
 }
 
 function saveItem() {
   const name2 = document.getElementById('f_name2').value.trim();
   if (!name2) { alert('商品名を入力してください'); return; }
-
-  const listings = SITES.map(s => ({
-    site: s.id,
-    listed: document.getElementById('toggle_' + s.id)?.checked || false,
-    price: parseFloat(document.getElementById('price_' + s.id)?.value) || 0,
-  }));
 
   const d = getData();
   const item = {
@@ -865,7 +956,7 @@ function saveItem() {
     purchaseSource: document.getElementById('f_source').value,
     shippingCost: parseFloat(document.getElementById('f_shipping').value) || 0,
     note: document.getElementById('f_note').value.trim(),
-    listings,
+    listings: editListings,
     updatedAt: new Date().toISOString(),
   };
 
@@ -898,40 +989,44 @@ function openDetail(id) {
   if (!item) return;
   const fees = getFees();
   const status = getStockStatus(item);
-  const listedCount = item.listings.filter(l => l.listed).length;
+  const needed = getNeeded(item);
+  const avail = item.stock - needed;
   const statusColor = status === 'safe' ? 'var(--success)' : status === 'warn' ? 'var(--warning)' : 'var(--danger)';
-  const statusLabel = status === 'safe' ? '安全' : status === 'warn' ? '要注意' : '在庫なし';
+  const statusLabel = status === 'safe' ? '安全' : status === 'warn' ? '要注意' : '在庫切れ';
 
   const photoHTML = item.photo
     ? `<div class="detail-photo-wrap"><img class="detail-photo" src="${item.photo}" alt=""></div>`
     : '';
 
   let listingsHTML = '';
-  item.listings.forEach(l => {
+  const active = (item.listings || []);
+  if (active.length === 0) {
+    listingsHTML = `<div style="padding:16px;font-size:14px;color:var(--gray)">出品パターンがありません</div>`;
+  }
+  active.forEach(l => {
     const site = SITES.find(s => s.id === l.site);
     if (!site) return;
+    const qty = l.qty || 1;
     const fee = l.price * (fees[l.site] / 100);
-    const profit = l.price - fee - (item.purchasePrice||0) - (item.purchaseShipping||0) - (item.shippingCost||0);
+    const profit = l.price - fee - (item.purchasePrice||0) * qty - (item.purchaseShipping||0) - (item.shippingCost||0);
     const profitStr = l.price ? (profit >= 0 ? `+¥${Math.round(profit).toLocaleString()}` : `-¥${Math.abs(Math.round(profit)).toLocaleString()}`) : '—';
     listingsHTML += `
       <div class="listing-row">
         <div>
-          <div class="listing-site">${site.name}</div>
+          <div class="listing-site">${site.name}　<span style="color:var(--primary)">${qty}個${qty > 1 ? 'セット' : ''}</span></div>
           ${l.price ? `<div class="listing-profit-val ${profit < 0 ? 'loss' : ''}">${profitStr}（手数料${fees[l.site]}%）</div>` : ''}
         </div>
         <div style="text-align:right">
           <div class="listing-price">${l.price ? '¥' + l.price.toLocaleString() : '—'}</div>
-          <div class="listing-status ${l.listed ? 'on' : 'off'}">${l.listed ? '出品中' : '未出品'}</div>
+          <div class="listing-status ${l.listed ? 'on' : 'off'}">${l.listed ? '出品中' : '停止中'}</div>
         </div>
       </div>`;
   });
 
-  const fullName = [item.name1, item.name2, item.name3].filter(Boolean).join(' ');
-
   document.getElementById('detailContent').innerHTML = `
     ${photoHTML}
     <div style="padding:16px">
-      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:4px">
         <div style="flex:1">
           ${item.name1 ? `<div style="font-size:12px;color:var(--gray);font-weight:500">${escHtml(item.name1)}</div>` : ''}
           ${item.name2 ? `<div style="font-size:20px;font-weight:700;line-height:1.2;margin-top:2px">${escHtml(item.name2)}</div>` : ''}
@@ -942,13 +1037,18 @@ function openDetail(id) {
           <div style="font-size:10px;color:${statusColor};font-weight:600;margin-top:2px">${statusLabel}</div>
         </div>
       </div>
+      <div class="stock-line" style="margin-bottom:8px">
+        <span class="stock-pill stock">在庫${item.stock}個</span>
+        <span class="stock-pill need">出品に必要${needed}個</span>
+        <span class="stock-pill ${avail < 0 ? 'avail-minus' : avail === 0 ? 'avail-zero' : 'avail-ok'}">${avail < 0 ? '不足' + Math.abs(avail) + '個' : '余裕' + avail + '個'}</span>
+      </div>
     </div>
     <div class="card" style="margin:0 16px 12px">
-      <div class="card-header">出品状況（${listedCount}サイト出品中）</div>
+      <div class="card-header">出品パターン</div>
       ${listingsHTML}
     </div>
     <div class="card" style="margin:0 16px 12px">
-      <div class="card-header">コスト内訳</div>
+      <div class="card-header">コスト内訳（1個あたり）</div>
       <div class="profit-result-row"><span class="profit-label">仕入れ先</span><span>${item.purchaseSource || '—'}</span></div>
       <div class="profit-result-row"><span class="profit-label">仕入れ値</span><span class="profit-amount">¥${(item.purchasePrice||0).toLocaleString()}</span></div>
       <div class="profit-result-row"><span class="profit-label">仕入れ送料</span><span class="profit-amount minus">-¥${(item.purchaseShipping||0).toLocaleString()}</span></div>
@@ -962,62 +1062,91 @@ function openDetail(id) {
   openModal('detailModal');
 }
 
-// ---- SELL MODAL ----
+// ---- SELL MODAL（出品パターン単位で選択） ----
 let sellingItemId = null;
 
 function openSellModal(id) {
+  const d = getData();
+  const item = d.items.find(i => i.id === id);
+  if (!item) return;
   sellingItemId = id;
+
+  const pats = (item.listings || []).filter(l => l.listed);
   let html = '';
-  SITES.forEach(s => {
+  if (pats.length === 0) {
+    html = `<div style="padding:16px;text-align:center;color:var(--gray);font-size:14px">出品中のパターンがありません。<br>下のボタンから手動で記録できます。</div>`;
+  }
+  pats.forEach(p => {
+    const site = SITES.find(s => s.id === p.site);
     html += `
-      <button onclick="confirmSell('${s.id}')" style="display:block;width:100%;background:var(--card);border:none;border-radius:12px;padding:16px;font-size:16px;font-weight:600;text-align:left;margin-bottom:10px;cursor:pointer;font-family:inherit;color:var(--text)">
-        ${s.name}
+      <button class="sell-option" onclick="confirmSell('${p.id}')">
+        <span>${site?.name || ''}　¥${(p.price||0).toLocaleString()}</span>
+        <span class="qty-tag">${p.qty}個${(p.qty||1) > 1 ? 'セット' : ''}</span>
       </button>`;
   });
-  document.getElementById('sellSiteList').innerHTML = html;
+  document.getElementById('sellOptionList').innerHTML = html;
   openModal('sellModal');
 }
 
-function confirmSell(siteId) {
+function confirmSell(patternId) {
   const d = getData();
   const item = d.items.find(i => i.id === sellingItemId);
   if (!item) return;
-  const site = SITES.find(s => s.id === siteId);
-  const listing = item.listings.find(l => l.site === siteId);
+  const p = (item.listings || []).find(l => l.id === patternId);
+  if (!p) return;
+  const site = SITES.find(s => s.id === p.site);
   const fees = getFees();
-  const price = listing?.price || 0;
-  const fee = price * (fees[siteId] / 100);
-  const profit = price - fee - (item.purchasePrice||0) - (item.purchaseShipping||0) - (item.shippingCost||0);
+  const qty = p.qty || 1;
+  const price = p.price || 0;
+  const fee = price * (fees[p.site] / 100);
+  const profit = price - fee - (item.purchasePrice||0) * qty - (item.purchaseShipping||0) - (item.shippingCost||0);
   const fullName = [item.name1, item.name2, item.name3].filter(Boolean).join(' ');
+
+  if (item.stock < qty) {
+    if (!confirm(`在庫${item.stock}個に対して${qty}個の売却です。在庫が不足していますが記録しますか？`)) return;
+  }
 
   if (!d.history) d.history = [];
   d.history.unshift({
     id: Date.now().toString(36),
     itemId: item.id,
-    itemName: fullName,
-    site: site.name,
+    itemName: fullName + `（${qty}個）`,
+    site: site?.name || '',
     sellPrice: price,
-    purchasePrice: item.purchasePrice || 0,
+    qty,
+    purchasePrice: (item.purchasePrice || 0) * qty,
     profit: Math.round(profit),
     soldAt: new Date().toISOString(),
   });
 
-  item.stock = Math.max(0, item.stock - 1);
-  if (item.stock === 0) item.listings.forEach(l => l.listed = false);
+  item.stock = Math.max(0, item.stock - qty);
+  // このパターンは売れたので停止扱いにする（再出品したら編集でONに）
+  p.listed = false;
+  // 在庫0になったら全パターン停止
+  if (item.stock === 0) (item.listings || []).forEach(l => l.listed = false);
 
   saveData(d);
   closeModal('sellModal');
   closeModal('detailModal');
   renderStock();
-  alert(`売却記録しました！\n利益: ${profit >= 0 ? '+' : ''}¥${Math.round(profit).toLocaleString()}`);
+
+  const needed = getNeeded(item);
+  const avail = item.stock - needed;
+  let msg = `売却記録しました！\n利益: ${profit >= 0 ? '+' : ''}¥${Math.round(profit).toLocaleString()}\n\n残り在庫: ${item.stock}個 / 出品中に必要: ${needed}個`;
+  if (avail < 0) msg += `\n⚠️ ${Math.abs(avail)}個不足！他の出品を取り下げてください`;
+  else msg += `\n✅ 再出品の余裕: ${avail}個`;
+  alert(msg);
 }
 
 // ---- PROFIT PAGE ----
 let selectedSiteId = SITES[0].id;
 
 function renderProfitPage() {
+  const mySites = getMySites();
+  const visible = SITES.filter(s => mySites.includes(s.id));
+  if (visible.length > 0 && !visible.find(s => s.id === selectedSiteId)) selectedSiteId = visible[0].id;
   let html = '';
-  SITES.forEach((s, i) => {
+  (visible.length ? visible : SITES).forEach(s => {
     html += `<button class="segment-btn ${s.id === selectedSiteId ? 'active' : ''}" onclick="selectProfitSite('${s.id}', this)">${s.name}</button>`;
   });
   document.getElementById('profitSiteSegment').innerHTML = html;
@@ -1105,10 +1234,24 @@ function renderHistory() {
 // ---- SETTINGS ----
 function renderSettings() {
   const d = getData();
-  let html = '';
+  const mySites = getMySites();
+
+  // 使用サイト
+  let siteHtml = '';
+  SITES.forEach(s => {
+    siteHtml += `
+      <label class="mysite-toggle">
+        <span>${s.name}</span>
+        <input type="checkbox" ${mySites.includes(s.id) ? 'checked' : ''} onchange="toggleMySite('${s.id}', this.checked)">
+      </label>`;
+  });
+  document.getElementById('mySiteSettings').innerHTML = siteHtml;
+
+  // 手数料
+  let feeHtml = '';
   SITES.forEach(s => {
     const fee = d.fees?.[s.id] ?? s.fee;
-    html += `
+    feeHtml += `
       <div class="form-row">
         <label class="form-label">${s.name}</label>
         <input type="number" class="form-input" value="${fee}" min="0" max="100" step="0.1"
@@ -1116,7 +1259,18 @@ function renderSettings() {
         <span style="color:var(--gray);font-size:13px">%</span>
       </div>`;
   });
-  document.getElementById('feeSettings').innerHTML = html;
+  document.getElementById('feeSettings').innerHTML = feeHtml;
+}
+
+function toggleMySite(siteId, on) {
+  let mySites = getMySites();
+  if (on) {
+    if (!mySites.includes(siteId)) mySites.push(siteId);
+  } else {
+    if (mySites.length <= 1) { alert('最低1つのサイトを選択してください'); renderSettings(); return; }
+    mySites = mySites.filter(id => id !== siteId);
+  }
+  setMySites(mySites);
 }
 
 function updateFee(siteId, val) {
@@ -1144,8 +1298,21 @@ function importData(e) {
       const d = JSON.parse(ev.target.result);
       if (!d.items) throw new Error();
       if (!confirm(`${d.items.length}件をインポートします。現在のデータは上書きされます。`)) return;
+      // 旧形式のlistings（qtyなし）を変換
+      d.items = d.items.map(item => ({
+        ...item,
+        name2: item.name2 || item.name || '',
+        listings: (item.listings || []).map((l, i) => ({
+          id: l.id || 'imp' + i + Math.random().toString(36).slice(2, 6),
+          site: l.site,
+          qty: l.qty || 1,
+          price: l.price || 0,
+          listed: !!l.listed,
+        })).filter(l => ['yahoo_auction','mercari','yahoo_fleamarket'].includes(l.site)),
+      }));
       saveData(d);
       alert('インポートが完了しました');
+      renderStock();
       renderSettings();
     } catch { alert('無効なファイルです'); }
   };
@@ -1154,7 +1321,7 @@ function importData(e) {
 
 function clearAllData() {
   if (!confirm('全データを削除しますか？この操作は取り消せません。')) return;
-  localStorage.removeItem('sedori_v3');
+  localStorage.removeItem('sedori_v4');
   alert('データを削除しました');
   renderStock();
 }
