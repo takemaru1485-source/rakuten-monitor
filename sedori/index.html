@@ -823,6 +823,63 @@ function onItemClick(e, id) {
 // ---- PHOTO ----
 let currentPhoto = null;
 
+// 写真を400px・画質60%に圧縮（容量節約）
+function compressImage(img) {
+  const canvas = document.createElement('canvas');
+  const max = 400;
+  let w = img.width, h = img.height;
+  if (w > max || h > max) {
+    if (w > h) { h = Math.round(h * max / w); w = max; }
+    else { w = Math.round(w * max / h); h = max; }
+  }
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', 0.6);
+}
+
+// 登録済みの大きい写真を再圧縮して容量を空ける（1回だけ実行）
+function recompressExistingPhotos() {
+  if (localStorage.getItem('sedori_recompressed_v1')) return;
+  const d = getData();
+  const targets = d.items.filter(i => i.photo && i.photo.length > 60000);
+  if (targets.length === 0) {
+    try { localStorage.setItem('sedori_recompressed_v1', '1'); } catch (e) {}
+    return;
+  }
+  let done = 0;
+  targets.forEach(item => {
+    const img = new Image();
+    img.onload = () => {
+      item.photo = compressImage(img);
+      done++;
+      if (done === targets.length) {
+        try {
+          saveData(d);
+          localStorage.setItem('sedori_recompressed_v1', '1');
+          renderStock();
+        } catch (e) {}
+      }
+    };
+    img.onerror = () => { done++; };
+    img.src = item.photo;
+  });
+}
+
+// v4に十分なデータがあれば旧データを削除して容量を空ける
+function cleanupOldKeys() {
+  try {
+    const v4 = localStorage.getItem('sedori_v4');
+    if (!v4) return;
+    const parsed = JSON.parse(v4);
+    if (parsed.items && parsed.items.length > 0) {
+      localStorage.removeItem('sedori_v3');
+      localStorage.removeItem('sedori_v2');
+      localStorage.removeItem('sedori_v3_backup');
+      localStorage.removeItem('sedori_v2_backup');
+    }
+  } catch (e) {}
+}
+
 function handlePhoto(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -830,16 +887,7 @@ function handlePhoto(e) {
   reader.onload = ev => {
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const max = 600;
-      let w = img.width, h = img.height;
-      if (w > max || h > max) {
-        if (w > h) { h = Math.round(h * max / w); w = max; }
-        else { w = Math.round(w * max / h); h = max; }
-      }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      currentPhoto = canvas.toDataURL('image/jpeg', 0.75);
+      currentPhoto = compressImage(img);
       updatePhotoPreview();
     };
     img.src = ev.target.result;
@@ -1384,6 +1432,8 @@ function escHtml(s) {
 
 renderStock();
 renderProfitPage();
+cleanupOldKeys();          // 復元済みなら旧データを削除して容量確保
+recompressExistingPhotos(); // 大きい写真を再圧縮
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
