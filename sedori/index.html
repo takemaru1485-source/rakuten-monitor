@@ -361,6 +361,10 @@
         <span style="color:var(--primary)">›</span>
       </div>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <div class="form-row" style="cursor:pointer" onclick="recoverOldData()">
+        <span style="flex:1;font-size:15px;color:var(--success)">旧データを探して復元</span>
+        <span style="color:var(--success)">›</span>
+      </div>
       <div class="form-row" style="cursor:pointer" onclick="clearAllData()">
         <span style="flex:1;font-size:15px;color:var(--danger)">全データを削除</span>
         <span style="color:var(--danger)">›</span>
@@ -502,56 +506,88 @@ const SITES = [
 ];
 
 // ---- DATA (v4: listings = [{id, site, qty, price, listed}] 複数パターン対応) ----
+// 旧形式(v2/v3)のデータをv4形式に変換する
+function migrateOldData(old) {
+  old.items = (old.items || []).map(item => ({
+    ...item,
+    name1: item.name1 || '',
+    name2: item.name2 || item.name || '',
+    name3: item.name3 || item.subtitle || '',
+    listings: (item.listings || [])
+      .filter(l => ['yahoo_auction','mercari','yahoo_fleamarket'].includes(l.site) && (l.listed || l.price))
+      .map((l, i) => ({
+        id: l.id || 'mig' + i + Math.random().toString(36).slice(2, 6),
+        site: l.site,
+        qty: l.qty || 1,
+        price: l.price || 0,
+        listed: !!l.listed,
+      })),
+  }));
+  if (!old.history) old.history = [];
+  if (!old.fees) old.fees = {};
+  return old;
+}
+
 function getData() {
-  const v4 = localStorage.getItem('sedori_v4');
-  if (v4) return JSON.parse(v4);
+  try {
+    const v4 = localStorage.getItem('sedori_v4');
+    if (v4) {
+      const parsed = JSON.parse(v4);
+      // v4が空で旧データが残っている場合は自動復元
+      if ((!parsed.items || parsed.items.length === 0)) {
+        const oldRaw = localStorage.getItem('sedori_v3') || localStorage.getItem('sedori_v2');
+        if (oldRaw) {
+          const restored = migrateOldData(JSON.parse(oldRaw));
+          if (restored.items.length > 0) {
+            try { saveData(restored); } catch (e) {}
+            return restored;
+          }
+        }
+      }
+      return parsed;
+    }
 
-  // v3からの移行
-  const v3 = localStorage.getItem('sedori_v3');
-  if (v3) {
-    const old = JSON.parse(v3);
-    old.items = (old.items || []).map(item => ({
-      ...item,
-      listings: (item.listings || [])
-        .filter(l => l.listed || l.price) // 何も設定していないものは除去
-        .map((l, i) => ({
-          id: 'mig' + i + Math.random().toString(36).slice(2, 6),
-          site: l.site,
-          qty: 1,
-          price: l.price || 0,
-          listed: !!l.listed,
-        })),
-    }));
-    saveData(old);
-    localStorage.removeItem('sedori_v3');
-    return old;
+    // v3/v2からの移行（旧データは消さずに残す）
+    const oldRaw = localStorage.getItem('sedori_v3') || localStorage.getItem('sedori_v2');
+    if (oldRaw) {
+      const old = migrateOldData(JSON.parse(oldRaw));
+      try { saveData(old); } catch (e) { /* 容量オーバーでも表示は続行 */ }
+      return old;
+    }
+  } catch (e) {
+    console.error('getData error:', e);
   }
-
-  // v2からの移行（念のため）
-  const v2 = localStorage.getItem('sedori_v2');
-  if (v2) {
-    const old = JSON.parse(v2);
-    old.items = (old.items || []).map(item => ({
-      ...item,
-      name1: item.name1 || '',
-      name2: item.name2 || item.name || '',
-      name3: item.name3 || item.subtitle || '',
-      listings: (item.listings || [])
-        .filter(l => ['yahoo_auction','mercari','yahoo_fleamarket'].includes(l.site) && (l.listed || l.price))
-        .map((l, i) => ({
-          id: 'mig' + i + Math.random().toString(36).slice(2, 6),
-          site: l.site, qty: 1, price: l.price || 0, listed: !!l.listed,
-        })),
-    }));
-    saveData(old);
-    localStorage.removeItem('sedori_v2');
-    return old;
-  }
-
   return { items: [], history: [], fees: {} };
 }
 function saveData(d) {
-  localStorage.setItem('sedori_v4', JSON.stringify(d));
+  try {
+    localStorage.setItem('sedori_v4', JSON.stringify(d));
+  } catch (e) {
+    alert('保存容量が足りません。写真の枚数を減らすか、古い商品を削除してください。');
+    throw e;
+  }
+}
+
+// 旧データを探して手動復元
+function recoverOldData() {
+  const candidates = [
+    ['sedori_v3', 'v3'], ['sedori_v2', 'v2'],
+    ['sedori_v3_backup', 'v3バックアップ'], ['sedori_v2_backup', 'v2バックアップ'],
+  ];
+  for (const [key, label] of candidates) {
+    const raw = localStorage.getItem(key);
+    if (!raw) continue;
+    try {
+      const old = migrateOldData(JSON.parse(raw));
+      if (old.items.length === 0) continue;
+      if (!confirm(`${label}のデータが見つかりました（商品${old.items.length}件）。復元しますか？\n※現在表示中のデータは上書きされます`)) continue;
+      saveData(old);
+      alert('復元しました！');
+      renderStock();
+      return;
+    } catch (e) {}
+  }
+  alert('復元できる旧データが見つかりませんでした。\nエクスポートしたJSONファイルがあれば「データをインポート」から復元できます。');
 }
 function getFees() {
   const d = getData();
