@@ -684,19 +684,12 @@ function renderStock() {
   let html = '';
   items.forEach(item => {
     const status = getStockStatus(item);
-    const needed = getNeeded(item);
-    const avail = item.stock - needed;
 
     const thumbHTML = item.photo
       ? `<img class="item-thumb" src="${item.photo}" alt="">`
       : `<div class="item-thumb-placeholder">📦</div>`;
 
-    // 余裕バッジ
-    let availClass = 'avail-ok', availLabel = `余裕${avail}`;
-    if (avail < 0) { availClass = 'avail-minus'; availLabel = `不足${Math.abs(avail)}`; }
-    else if (avail === 0) { availClass = 'avail-zero'; availLabel = '余裕0'; }
-
-    // 使用サイトのみ2段表示（1段目:1サイト目 / 2段目:残り）※柔軟にサイトごとに1行
+    // 使用サイトのみ、サイトごとに1行で出品個数を表示
     const visibleSites = SITES.filter(s => mySites.includes(s.id));
     let siteRowsHTML = '<div class="site-rows">';
     visibleSites.forEach(s => {
@@ -707,7 +700,7 @@ function renderStock() {
         patHTML = `<span class="no-listing">未出品</span>`;
       } else {
         patHTML = pats.map(p =>
-          `<span class="listing-pat ${p.listed ? '' : 'off'}">${p.qty}個 ¥${(p.price||0).toLocaleString()}</span>`
+          `<span class="listing-pat ${p.listed ? '' : 'off'}">${p.qty}個</span>`
         ).join('');
       }
       siteRowsHTML += `
@@ -729,11 +722,6 @@ function renderStock() {
           ${item.name1 ? `<div class="item-name1">${escHtml(item.name1)}</div>` : ''}
           ${item.name2 ? `<div class="item-name2">${escHtml(item.name2)}</div>` : ''}
           ${item.name3 ? `<div class="item-name3">${escHtml(item.name3)}</div>` : ''}
-          <div class="stock-line">
-            <span class="stock-pill stock">在庫${item.stock}</span>
-            <span class="stock-pill need">出品${needed}</span>
-            <span class="stock-pill ${availClass}">${availLabel}</span>
-          </div>
           ${siteRowsHTML}
         </div>
       </div>`;
