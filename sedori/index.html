@@ -987,15 +987,10 @@ function openAddModal() {
   openModal('addModal');
 }
 
-function openEditModal(id) {
-  const d = getData();
-  const item = d.items.find(i => i.id === id);
-  if (!item) return;
-  editingId = id;
+// 商品データをフォームに流し込む共通処理
+function fillFormFromItem(item) {
   currentPhoto = item.photo || null;
   editListings = JSON.parse(JSON.stringify(item.listings || []));
-  document.getElementById('modalTitle').textContent = '商品を編集';
-  document.getElementById('deleteBtn').style.display = 'block';
   document.getElementById('f_name1').value = item.name1 || '';
   document.getElementById('f_name2').value = item.name2 || '';
   document.getElementById('f_name3').value = item.name3 || '';
@@ -1007,6 +1002,31 @@ function openEditModal(id) {
   document.getElementById('f_note').value = item.note || '';
   updatePhotoPreview();
   renderListingEditor();
+}
+
+function openEditModal(id) {
+  const d = getData();
+  const item = d.items.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = '商品を編集';
+  document.getElementById('deleteBtn').style.display = 'block';
+  fillFormFromItem(item);
+  closeModal('detailModal');
+  openModal('addModal');
+}
+
+// コピーして新規登録（既存商品の内容が入った状態で追加画面を開く）
+function openCopyModal(id) {
+  const d = getData();
+  const item = d.items.find(i => i.id === id);
+  if (!item) return;
+  editingId = null; // 新規登録として保存される
+  document.getElementById('modalTitle').textContent = '商品をコピーして追加';
+  document.getElementById('deleteBtn').style.display = 'none';
+  fillFormFromItem(item);
+  // コピー品の出品パターンは新しいIDにする
+  editListings.forEach(l => { l.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6); });
   closeModal('detailModal');
   openModal('addModal');
 }
@@ -1128,6 +1148,7 @@ function openDetail(id) {
       ${item.note ? `<div class="profit-result-row"><span class="profit-label">備考</span><span style="color:var(--gray)">${escHtml(item.note)}</span></div>` : ''}
     </div>
     <button class="btn-primary" onclick="openEditModal('${id}')">編集する</button>
+    <button class="btn-primary" style="background:rgba(0,122,255,0.1);color:var(--primary)" onclick="openCopyModal('${id}')">コピーして新規登録</button>
     <button class="btn-success" onclick="openSellModal('${id}')">売却を記録する</button>
     <div style="height:8px"></div>
   `;
