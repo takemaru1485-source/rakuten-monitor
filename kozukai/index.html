@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="おこづかい">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>おこづかいちょう</title>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --text:#1c1c1e; --sub:#8e8e93;
+    --line:#e5e5ea; --accent:#3478f6; --radius:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN",sans-serif;
+    background:var(--bg); color:var(--text);
+    padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 24px);
+    max-width:520px; margin:0 auto;
+  }
+  header{padding:16px 16px 8px; display:flex; align-items:baseline; justify-content:space-between;}
+  header h1{font-size:22px; margin:0; font-weight:700;}
+  header .backup-btn{background:none; border:none; color:var(--accent); font-size:14px; padding:4px;}
+
+  .tabs{display:flex; gap:8px; padding:8px 16px;}
+  .tab{
+    flex:1; padding:12px 0; border:none; border-radius:var(--radius);
+    font-size:17px; font-weight:700; background:var(--card); color:var(--sub);
+    box-shadow:0 1px 2px rgba(0,0,0,.04);
+  }
+  .tab.active-ikumaru{background:#3478f6; color:#fff;}
+  .tab.active-kiho{background:#f2557d; color:#fff;}
+
+  .card{
+    background:var(--card); border-radius:var(--radius); margin:10px 16px; padding:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,.05);
+  }
+  .card h2{font-size:13px; color:var(--sub); margin:0 0 10px; font-weight:600; letter-spacing:.03em;}
+
+  .status-row{display:flex; justify-content:space-between; text-align:center;}
+  .status-item{flex:1;}
+  .status-item .val{font-size:20px; font-weight:700;}
+  .status-item .lbl{font-size:11px; color:var(--sub); margin-top:2px;}
+
+  .field{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line);}
+  .field:last-of-type{border-bottom:none;}
+  .field label{font-size:15px; color:var(--text);}
+  .field input{
+    border:none; background:#f2f2f7; border-radius:8px; padding:10px 12px;
+    font-size:17px; text-align:right; width:150px; color:var(--text);
+  }
+  .field input:focus{outline:2px solid var(--accent);}
+  .field input[type="month"]{width:170px; text-align:left;}
+
+  .result-box{
+    margin-top:14px; padding:14px; border-radius:12px; background:#f2f2f7; text-align:center;
+  }
+  .result-box .calc{font-size:13px; color:var(--sub);}
+  .result-box .amount{font-size:34px; font-weight:800; margin-top:4px;}
+  .result-box .amount small{font-size:17px; font-weight:600;}
+
+  .save-btn{
+    width:100%; margin-top:14px; padding:15px 0; border:none; border-radius:12px;
+    font-size:17px; font-weight:700; color:#fff; background:var(--accent);
+  }
+  .save-btn:active{opacity:.8;}
+  body[data-child="kiho"] .save-btn{background:#f2557d;}
+  body[data-child="kiho"] .field input:focus{outline-color:#f2557d;}
+
+  .history-item{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 0; border-bottom:1px solid var(--line);
+  }
+  .history-item:last-child{border-bottom:none;}
+  .history-item .ym{font-size:15px; font-weight:600; width:84px;}
+  .history-item .detail{flex:1; text-align:right; margin-right:12px;}
+  .history-item .detail .total{font-size:13px; color:var(--sub);}
+  .history-item .detail .paid{font-size:17px; font-weight:700;}
+  .history-item .rate-badge{
+    font-size:12px; font-weight:700; color:#fff; background:#a5a5ab;
+    border-radius:8px; padding:3px 7px; margin-right:10px;
+  }
+  .history-item .rate-badge.multi{background:#ff9500;}
+  .history-item .del{background:none; border:none; color:#ff3b30; font-size:13px; padding:6px;}
+
+  .sum-line{margin-top:10px; padding-top:10px; border-top:1px solid var(--line); display:flex; justify-content:space-between; font-size:14px;}
+  .sum-line b{font-size:16px;}
+
+  .chart-head{margin-bottom:6px;}
+  .chart-head .now-label{font-size:12px; color:var(--sub);}
+  .chart-head .now-value{font-size:30px; font-weight:800; line-height:1.2;}
+  .chart-head .growth{font-size:13px; font-weight:600; margin-top:2px;}
+  .chart-head .growth.up{color:#34c759;}
+  .chart-head .growth.down{color:#ff3b30;}
+  #chart{width:100%; height:auto; display:block;}
+
+  .in-wrap{display:flex; align-items:center; gap:6px;}
+  .in-wrap input{width:118px;}
+  .calc-btn{border:none; background:#e9e9ee; border-radius:8px; padding:9px 10px; font-size:17px; line-height:1;}
+  .calc-btn:active{background:#d9d9de;}
+
+  #calc-dlg{padding:16px;}
+  .calc-expr{
+    background:#f2f2f7; border-radius:10px; padding:12px; font-size:24px; font-weight:700;
+    text-align:right; min-height:34px; word-break:break-all;
+  }
+  .calc-res{text-align:right; font-size:15px; color:var(--sub); padding:6px 4px 10px; min-height:20px;}
+  .calc-pad{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+  .calc-pad button{
+    border:none; border-radius:10px; padding:15px 0; font-size:20px; font-weight:600;
+    background:#f2f2f7; color:var(--text);
+  }
+  .calc-pad button:active{opacity:.7;}
+  .calc-pad .op{background:#e3ecfd; color:var(--accent);}
+  .calc-pad .apply{grid-column:span 2; background:var(--accent); color:#fff; font-size:16px;}
+  body[data-child="kiho"] .calc-pad .apply{background:#f2557d;}
+  .calc-pad .close-k{font-size:15px; color:var(--sub);}
+
+  body.locked .edit-only{display:none !important;}
+  .chart-note{font-size:11px; color:var(--sub); margin-top:6px; line-height:1.5;}
+  #pin-input{
+    width:100%; border:none; background:#f2f2f7; border-radius:10px; padding:14px;
+    font-size:24px; text-align:center; letter-spacing:8px;
+  }
+
+  dialog{
+    border:none; border-radius:16px; padding:20px; width:88%; max-width:420px;
+    margin:auto;
+  }
+  dialog::backdrop{background:rgba(0,0,0,.4);}
+  dialog h3{margin:0 0 12px; font-size:17px;}
+  dialog textarea{width:100%; height:140px; font-size:12px; border:1px solid var(--line); border-radius:8px; padding:8px;}
+  dialog .dlg-btns{display:flex; gap:10px; margin-top:12px;}
+  dialog .dlg-btns button{flex:1; padding:12px 0; border:none; border-radius:10px; font-size:15px; font-weight:600;}
+  .dlg-primary{background:var(--accent); color:#fff;}
+  .dlg-cancel{background:#f2f2f7; color:var(--text);}
+  .hint{font-size:12px; color:var(--sub); margin-top:8px; line-height:1.5;}
+  .toast{
+    position:fixed; left:50%; bottom:40px; transform:translateX(-50%);
+    background:rgba(28,28,30,.92); color:#fff; font-size:14px; padding:10px 18px;
+    border-radius:20px; opacity:0; transition:opacity .3s; pointer-events:none; white-space:nowrap;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body data-child="ikumaru" class="locked">
+
+<header>
+  <h1>おこづかいちょう</h1>
+  <span>
+    <button class="backup-btn edit-only" onclick="openBackup()">バックアップ</button>
+    <button class="backup-btn" id="lock-btn" onclick="toggleLock()">🔒 おうちの人</button>
+  </span>
+</header>
+
+<div class="tabs">
+  <button class="tab" id="tab-ikumaru" onclick="switchChild('ikumaru')">育丸</button>
+  <button class="tab" id="tab-kiho" onclick="switchChild('kiho')">希朋</button>
+</div>
+
+<div class="card">
+  <h2>いまの状況</h2>
+  <div class="status-row">
+    <div class="status-item"><div class="val" id="st-last">—</div><div class="lbl">前回の報告</div></div>
+    <div class="status-item"><div class="val" id="st-months">—</div><div class="lbl">経過月数</div></div>
+    <div class="status-item"><div class="val" id="st-rate">—</div><div class="lbl">今回の利率</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>おこづかいのせいちょう</h2>
+  <div class="chart-head" id="chart-head"></div>
+  <svg id="chart" viewBox="0 0 340 190" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="chart-note">うすい丸は、報告がなかった月に「毎月もらっていたら」の仮計算です。</div>
+</div>
+
+<div class="card edit-only">
+  <h2>残高を報告しておこづかいを計算</h2>
+  <div class="field"><label>対象の月</label><input type="month" id="in-ym"></div>
+  <div class="field"><label>銀行残高</label>
+    <span class="in-wrap"><input type="text" inputmode="numeric" id="in-bank" placeholder="0"><button class="calc-btn" onclick="openCalc('in-bank')">🧮</button></span></div>
+  <div class="field"><label>お母さん預かり</label>
+    <span class="in-wrap"><input type="text" inputmode="numeric" id="in-kept" placeholder="0"><button class="calc-btn" onclick="openCalc('in-kept')">🧮</button></span></div>
+  <div class="field"><label>お財布の中</label>
+    <span class="in-wrap"><input type="text" inputmode="numeric" id="in-wallet" placeholder="0"><button class="calc-btn" onclick="openCalc('in-wallet')">🧮</button></span></div>
+  <div class="field"><label>利率（％）</label><input type="text" inputmode="numeric" id="in-rate"></div>
+  <div class="result-box">
+    <div class="calc" id="calc-line">合計 0円 × 1%</div>
+    <div class="amount" id="calc-amount">0<small> 円</small></div>
+  </div>
+  <button class="save-btn" onclick="saveRecord()">おこづかいを渡した！記録する</button>
+</div>
+
+<div class="card">
+  <h2>これまでの記録</h2>
+  <div id="history"></div>
+  <div class="sum-line"><span>累計おこづかい</span><b id="sum-paid">0円</b></div>
+</div>
+
+<dialog id="backup-dlg">
+  <h3>バックアップ</h3>
+  <textarea id="backup-text"></textarea>
+  <div class="dlg-btns">
+    <button class="dlg-cancel" onclick="document.getElementById('backup-dlg').close()">閉じる</button>
+    <button class="dlg-primary" onclick="copyBackup()">コピー</button>
+    <button class="dlg-primary" style="background:#34c759" onclick="importBackup()">読み込む</button>
+  </div>
+  <div class="dlg-btns">
+    <button class="dlg-cancel" onclick="openPinChange()">暗証番号を変える</button>
+  </div>
+  <div class="hint">「コピー」した文字をメモアプリ等に保存しておけばバックアップになります。復元するときは、その文字をここに貼り付けて「読み込む」を押してください。</div>
+</dialog>
+
+<dialog id="pin-dlg">
+  <h3 id="pin-title">暗証番号を入力</h3>
+  <input type="password" inputmode="numeric" id="pin-input" maxlength="8" autocomplete="off">
+  <div class="dlg-btns">
+    <button class="dlg-cancel" onclick="document.getElementById('pin-dlg').close()">やめる</button>
+    <button class="dlg-primary" onclick="pinOk()">OK</button>
+  </div>
+  <div class="hint" id="pin-hint"></div>
+</dialog>
+
+<dialog id="calc-dlg">
+  <div class="calc-expr" id="calc-expr">0</div>
+  <div class="calc-res" id="calc-res"></div>
+  <div class="calc-pad">
+    <button onclick="calcKey('7')">7</button><button onclick="calcKey('8')">8</button><button onclick="calcKey('9')">9</button><button class="op" onclick="calcKey('÷')">÷</button>
+    <button onclick="calcKey('4')">4</button><button onclick="calcKey('5')">5</button><button onclick="calcKey('6')">6</button><button class="op" onclick="calcKey('×')">×</button>
+    <button onclick="calcKey('1')">1</button><button onclick="calcKey('2')">2</button><button onclick="calcKey('3')">3</button><button class="op" onclick="calcKey('−')">−</button>
+    <button onclick="calcKey('0')">0</button><button onclick="calcKey('00')">00</button><button onclick="calcKey('⌫')">⌫</button><button class="op" onclick="calcKey('+')">＋</button>
+    <button class="op" onclick="calcKey('C')">C</button>
+    <button class="close-k" onclick="document.getElementById('calc-dlg').close()">とじる</button>
+    <button class="apply" onclick="calcApply()">この金額を入れる</button>
+  </div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'kozukai-data-v1';
+
+// Numbersファイルから移行した初期データ
+const SEED = {
+  ikumaru: [
+    {ym:'2022-12',bank:130000,kept:45000,wallet:9300,rate:1,paid:1843},
+    {ym:'2023-01',bank:130000,kept:78000,wallet:1000,rate:1,paid:2090},
+    {ym:'2023-02',bank:130000,kept:73000,wallet:4613,rate:1,paid:2076},
+    {ym:'2023-04',bank:130000,kept:63000,wallet:2667,rate:1,paid:1957},
+    {ym:'2023-05',bank:130000,kept:58000,wallet:3195,rate:1,paid:1912},
+    {ym:'2023-06',bank:130000,kept:58000,wallet:3780,rate:1,paid:1918},
+    {ym:'2023-07',bank:130000,kept:58000,wallet:7102,rate:1,paid:1951},
+    {ym:'2023-08',bank:130000,kept:58000,wallet:3294,rate:1,paid:1913},
+    {ym:'2023-09',bank:130000,kept:58000,wallet:12462,rate:1,paid:2005},
+    {ym:'2023-10',bank:130000,kept:58000,wallet:16605,rate:1,paid:2046},
+    {ym:'2023-11',bank:130000,kept:58000,wallet:10900,rate:1,paid:1989},
+    {ym:'2023-12',bank:130000,kept:58000,wallet:4512,rate:1,paid:1925},
+    {ym:'2024-01',bank:130000,kept:58000,wallet:59106,rate:1,paid:2471},
+    {ym:'2024-02',bank:130000,kept:58000,wallet:64200,rate:1,paid:2522},
+    {ym:'2024-03',bank:130000,kept:58000,wallet:46200,rate:1,paid:2342},
+    {ym:'2024-04',bank:130000,kept:58000,wallet:210000,rate:1,paid:3980},
+    {ym:'2024-05',bank:130000,kept:258000,wallet:40850,rate:1,paid:4289},
+    {ym:'2024-09',bank:130000,kept:150000,wallet:15800,rate:4,paid:11832},
+    {ym:'2024-12',bank:130000,kept:150000,wallet:49106,rate:3,paid:9873},
+    {ym:'2025-01',bank:130000,kept:150000,wallet:87045,rate:1,paid:3670},
+    {ym:'2025-11',bank:130000,kept:150000,wallet:84432,rate:11,paid:40088},
+    {ym:'2025-12',bank:130000,kept:150000,wallet:98080,rate:1,paid:3781},
+    {ym:'2026-01',bank:130000,kept:150000,wallet:106471,rate:1,paid:3865},
+    {ym:'2026-03',bank:130000,kept:150000,wallet:74229,rate:2,paid:7085},
+    {ym:'2026-04',bank:130000,kept:150000,wallet:62225,rate:1,paid:3422},
+    {ym:'2026-06',bank:130000,kept:150000,wallet:43062,rate:1,paid:3231},
+  ],
+  kiho: [
+    {ym:'2024-04',bank:100000,kept:0,wallet:89369,rate:1,paid:1894},
+    {ym:'2024-05',bank:100000,kept:0,wallet:91273,rate:1,paid:1913},
+    {ym:'2024-12',bank:100000,kept:0,wallet:99454,rate:7,paid:13962},
+    {ym:'2025-11',bank:100000,kept:0,wallet:128591,rate:12,paid:27431},
+    {ym:'2025-12',bank:100000,kept:0,wallet:128951,rate:1,paid:2290},
+    {ym:'2026-01',bank:100000,kept:0,wallet:149405,rate:1,paid:2494},
+    {ym:'2026-03',bank:100000,kept:0,wallet:181855,rate:2,paid:5637},
+    {ym:'2026-04',bank:100000,kept:0,wallet:197272,rate:1,paid:2973},
+    {ym:'2026-06',bank:100000,kept:0,wallet:196699,rate:1,paid:2967},
+  ]
+};
+
+let data = load();
+let child = 'ikumaru';
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  const copy = JSON.parse(JSON.stringify(SEED));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(copy));
+  return copy;
+}
+function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function fmt(n){ return n.toLocaleString('ja-JP'); }
+function ymLabel(ym){ const [y,m] = ym.split('-'); return `${y}年${Number(m)}月`; }
+function ymIndex(ym){ const [y,m] = ym.split('-').map(Number); return y*12+m; }
+function currentYm(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+function records(){ return data[child].slice().sort((a,b)=>a.ym<b.ym?-1:1); }
+function lastRecord(){ const r = records(); return r.length ? r[r.length-1] : null; }
+
+function num(id){
+  const v = document.getElementById(id).value.replace(/[,，、\s]/g,'');
+  return v === '' ? 0 : (parseInt(v,10) || 0);
+}
+
+// 選択月に応じた利率（前回報告からの経過月数）
+function autoRate(ym){
+  const past = records().filter(r => r.ym < ym);
+  if(!past.length) return 1;
+  return Math.max(1, ymIndex(ym) - ymIndex(past[past.length-1].ym));
+}
+
+function switchChild(c){
+  child = c;
+  document.body.dataset.child = c;
+  document.getElementById('tab-ikumaru').className = 'tab' + (c==='ikumaru' ? ' active-ikumaru' : '');
+  document.getElementById('tab-kiho').className = 'tab' + (c==='kiho' ? ' active-kiho' : '');
+  resetForm();
+  render();
+}
+
+function resetForm(){
+  const ym = currentYm();
+  document.getElementById('in-ym').value = ym;
+  const last = lastRecord();
+  // 銀行・預かりは変動が少ないので前回値をあらかじめ入れておく
+  document.getElementById('in-bank').value = last ? fmt(last.bank) : '';
+  document.getElementById('in-kept').value = last ? fmt(last.kept) : '';
+  document.getElementById('in-wallet').value = '';
+  document.getElementById('in-rate').value = autoRate(ym);
+  recalc();
+}
+
+function recalc(){
+  const total = num('in-bank') + num('in-kept') + num('in-wallet');
+  const rate = num('in-rate') || 1;
+  const paid = Math.round(total * rate / 100);
+  document.getElementById('calc-line').textContent = `合計 ${fmt(total)}円 × ${rate}%`;
+  document.getElementById('calc-amount').innerHTML = `${fmt(paid)}<small> 円</small>`;
+}
+
+function onYmChange(){
+  const ym = document.getElementById('in-ym').value;
+  if(ym) document.getElementById('in-rate').value = autoRate(ym);
+  recalc();
+}
+
+function saveRecord(){
+  const ym = document.getElementById('in-ym').value;
+  if(!ym){ toast('月を選んでください'); return; }
+  const bank = num('in-bank'), kept = num('in-kept'), wallet = num('in-wallet');
+  const total = bank + kept + wallet;
+  if(total === 0){ toast('残高を入力してください'); return; }
+  const rate = num('in-rate') || 1;
+  const paid = Math.round(total * rate / 100);
+  const exists = data[child].findIndex(r => r.ym === ym);
+  if(exists >= 0){
+    if(!confirm(`${ymLabel(ym)}は記録済みです。上書きしますか？`)) return;
+    data[child].splice(exists,1);
+  }
+  data[child].push({ym, bank, kept, wallet, rate, paid});
+  persist();
+  resetForm();
+  render();
+  toast(`${ymLabel(ym)}のおこづかい ${fmt(paid)}円 を記録しました`);
+}
+
+function delRecord(ym){
+  if(!confirm(`${ymLabel(ym)}の記録を削除しますか？`)) return;
+  data[child] = data[child].filter(r => r.ym !== ym);
+  persist();
+  resetForm();
+  render();
+}
+
+function render(){
+  const rs = records();
+  const last = rs.length ? rs[rs.length-1] : null;
+  const nowYm = currentYm();
+  document.getElementById('st-last').textContent = last ? ymLabel(last.ym) : 'なし';
+  const months = last ? Math.max(1, ymIndex(nowYm) - ymIndex(last.ym)) : 1;
+  document.getElementById('st-months').textContent = last ? `${months}ヶ月` : '—';
+  document.getElementById('st-rate').textContent = `${months}%`;
+
+  const hist = document.getElementById('history');
+  hist.innerHTML = '';
+  let sum = 0;
+  rs.slice().reverse().forEach(r => {
+    sum += r.paid;
+    const total = r.bank + r.kept + r.wallet;
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = `
+      <span class="ym">${ymLabel(r.ym)}</span>
+      <span class="rate-badge${r.rate>1?' multi':''}">${r.rate}%</span>
+      <span class="detail">
+        <div class="total">残高 ${fmt(total)}円</div>
+        <div class="paid">${fmt(r.paid)}円</div>
+      </span>
+      <button class="del edit-only" onclick="delRecord('${r.ym}')">削除</button>`;
+    hist.appendChild(div);
+  });
+  document.getElementById('sum-paid').textContent = fmt(sum) + '円';
+  renderChart();
+}
+
+// ひと月あたりのおこづかい（残高×1%）の推移チャート
+function renderChart(){
+  const rs = records();
+  const head = document.getElementById('chart-head');
+  const svg = document.getElementById('chart');
+  const color = child === 'ikumaru' ? '#3478f6' : '#f2557d';
+  // 実際の記録（報告があった月）
+  const anchors = rs.map(r => ({x: ymIndex(r.ym), ym: r.ym, v: Math.round(r.paid / Math.max(1, r.rate)), real: true}));
+  // 空白の月は前後の記録から「毎月もらっていたら」の仮計算で埋める
+  const pts = [];
+  anchors.forEach((a, i) => {
+    pts.push(a);
+    if(i < anchors.length - 1){
+      const b = anchors[i+1];
+      for(let x = a.x + 1; x < b.x; x++){
+        pts.push({x, v: Math.round(a.v + (b.v - a.v) * (x - a.x) / (b.x - a.x)), real: false});
+      }
+    }
+  });
+  if(pts.length < 2){
+    svg.innerHTML = '';
+    head.innerHTML = '<div class="now-label">記録が2件以上たまるとグラフが出ます</div>';
+    return;
+  }
+  const first = pts[0], last = pts[pts.length-1];
+  const diff = last.v - first.v;
+  const pct = Math.round(diff / first.v * 100);
+  head.innerHTML = `
+    <div class="now-label">ひと月ぶんのおこづかい</div>
+    <div class="now-value" style="color:${color}">${fmt(last.v)}円</div>
+    <div class="growth ${diff >= 0 ? 'up' : 'down'}">スタート（${ymLabel(first.ym)}・${fmt(first.v)}円）から ${diff>=0?'+':''}${fmt(diff)}円（${diff>=0?'+':''}${pct}%）</div>`;
+
+  const W=340, H=190, L=46, R=14, T=14, B=26;
+  const x0 = first.x, x1 = last.x;
+  let vmin = Math.min(...pts.map(p=>p.v)), vmax = Math.max(...pts.map(p=>p.v));
+  const pad = Math.max((vmax-vmin)*0.15, vmax*0.05, 50);
+  vmin = Math.max(0, vmin - pad); vmax += pad;
+  const X = x => L + (x - x0) / (x1 - x0 || 1) * (W - L - R);
+  const Y = v => T + (1 - (v - vmin) / (vmax - vmin)) * (H - T - B);
+
+  let grid = '';
+  for(let i=0; i<=3; i++){
+    const v = vmin + (vmax - vmin) * i / 3, y = Y(v);
+    grid += `<line x1="${L}" x2="${W-R}" y1="${y}" y2="${y}" stroke="#e5e5ea"/>`;
+    grid += `<text x="${L-6}" y="${y+3}" text-anchor="end" font-size="9" fill="#8e8e93">${fmt(Math.round(v))}</text>`;
+  }
+  for(let m = x0; m <= x1; m++){
+    if(m % 12 === 1){ // 各年の1月に年ラベル
+      grid += `<text x="${X(m).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="9" fill="#8e8e93">${String((m-1)/12).slice(2)}年</text>`;
+    }
+  }
+  const line = pts.map((p,i) => `${i?'L':'M'}${X(p.x).toFixed(1)},${Y(p.v).toFixed(1)}`).join('');
+  const area = line + `L${X(last.x).toFixed(1)},${Y(vmin).toFixed(1)}L${X(first.x).toFixed(1)},${Y(vmin).toFixed(1)}Z`;
+  svg.innerHTML = `
+    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${color}" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${grid}
+    <path d="${area}" fill="url(#ag)"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${pts.map(p => p.real
+      ? `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="2.3" fill="${color}"/>`
+      : `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="2" fill="#fff" stroke="${color}" stroke-opacity="0.45"/>`
+    ).join('')}
+    <circle cx="${X(last.x).toFixed(1)}" cy="${Y(last.v).toFixed(1)}" r="6" fill="${color}" opacity="0.25"/>
+    <circle cx="${X(last.x).toFixed(1)}" cy="${Y(last.v).toFixed(1)}" r="3.5" fill="${color}"/>`;
+}
+
+// 電卓（ジムの月謝を引いた銀行残高などをその場で計算して入力できる）
+let calcTarget = null, calcExpr = '';
+function openCalc(id){
+  calcTarget = id;
+  calcExpr = document.getElementById(id).value.replace(/[,，\s]/g,'');
+  updCalc();
+  document.getElementById('calc-dlg').showModal();
+}
+function calcKey(k){
+  if(k === 'C') calcExpr = '';
+  else if(k === '⌫') calcExpr = calcExpr.slice(0, -1);
+  else calcExpr += k;
+  updCalc();
+}
+function calcEval(s){
+  s = s.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
+  if(!s || !/^[0-9+\-*/. ]+$/.test(s)) return null;
+  try{
+    const v = Function('"use strict";return(' + s + ')')();
+    return (typeof v === 'number' && isFinite(v)) ? v : null;
+  }catch(e){ return null; }
+}
+function updCalc(){
+  document.getElementById('calc-expr').textContent = calcExpr || '0';
+  const v = calcEval(calcExpr);
+  document.getElementById('calc-res').textContent =
+    (v !== null && /[+×÷−*/-]/.test(calcExpr)) ? '= ' + fmt(Math.round(v)) : '';
+}
+function calcApply(){
+  const v = calcEval(calcExpr);
+  if(v === null){ toast('計算式が正しくありません'); return; }
+  document.getElementById(calcTarget).value = fmt(Math.round(v));
+  document.getElementById('calc-dlg').close();
+  recalc();
+}
+
+function openBackup(){
+  document.getElementById('backup-text').value = JSON.stringify(data);
+  document.getElementById('backup-dlg').showModal();
+}
+function copyBackup(){
+  const t = document.getElementById('backup-text');
+  t.select();
+  navigator.clipboard.writeText(t.value).then(()=>toast('コピーしました'));
+}
+function importBackup(){
+  try{
+    const obj = JSON.parse(document.getElementById('backup-text').value);
+    if(!obj.ikumaru || !obj.kiho) throw new Error();
+    data = obj;
+    persist();
+    document.getElementById('backup-dlg').close();
+    resetForm();
+    render();
+    toast('読み込みました');
+  }catch(e){ toast('データの形式が正しくありません'); }
+}
+
+// おうちの人モード（暗証番号ロック）
+function getPin(){ return data.pin || '1234'; }
+let pinMode = 'unlock';
+function toggleLock(){
+  if(document.body.classList.contains('locked')){
+    pinMode = 'unlock';
+    document.getElementById('pin-title').textContent = '暗証番号を入力';
+    document.getElementById('pin-hint').textContent = 'おうちの人だけが編集できます。';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-dlg').showModal();
+  }else{
+    document.body.classList.add('locked');
+    updateLockBtn();
+    toast('閲覧モードにしました');
+  }
+}
+function openPinChange(){
+  pinMode = 'set';
+  document.getElementById('pin-title').textContent = '新しい暗証番号';
+  document.getElementById('pin-hint').textContent = '4〜8桁の数字を入れてください。';
+  document.getElementById('pin-input').value = '';
+  document.getElementById('pin-dlg').showModal();
+}
+function pinOk(){
+  const v = document.getElementById('pin-input').value;
+  if(pinMode === 'unlock'){
+    if(v === getPin()){
+      document.getElementById('pin-dlg').close();
+      document.body.classList.remove('locked');
+      updateLockBtn();
+      toast('編集できるようになりました');
+    }else{
+      toast('暗証番号がちがいます');
+      document.getElementById('pin-input').value = '';
+    }
+  }else{
+    if(!/^\d{4,8}$/.test(v)){ toast('4〜8桁の数字にしてください'); return; }
+    data.pin = v;
+    persist();
+    document.getElementById('pin-dlg').close();
+    toast('暗証番号を変えました');
+  }
+}
+function updateLockBtn(){
+  document.getElementById('lock-btn').textContent =
+    document.body.classList.contains('locked') ? '🔒 おうちの人' : '🔓 ロックする';
+}
+
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+['in-bank','in-kept','in-wallet','in-rate'].forEach(id =>
+  document.getElementById(id).addEventListener('input', recalc));
+document.getElementById('in-ym').addEventListener('change', onYmChange);
+
+switchChild('ikumaru');
+</script>
+</body>
+</html>
